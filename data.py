@@ -1,43 +1,39 @@
 #Feature Model Configuration
-
-
 feature_model = {
 
     "features": {
-        "TeaStore",
+        "AdaptableTeaStore",
         "WebUI",
         "Authorization",
-        "Local Auth",
-        "SSO Auth",
+        "LocalAuth",
+        "SSOAuth",
         "Google",
         "Facebook",
         "Persistence",
-        "ImageService",
-        "PageCompilation",
-        "PageInfo",
-        "PageImages",
-        "CompilationWithRecommendations",
-        "Recommender",
-        "LocalAuth",
-        "AuthPageInfo",
-        "LowPower",
-        "FullPower",
         "LocalCache",
+        "LocalStaticDB",
+        "ImageService",
         "ImageProvider",
-        "BasicPageInfo"
+        "LocalStaticImg",
+        "PageCompilation",
+        "PageInformation",
+        "BasicPageInfo",
+        "AuthoPageInfo",
+        "PageImages",
+        "CompilationWithRecom",
+        "Recommender",
+        "LowPower",
+        "FullPower"
     },
 
-    # --------------------------------------------------------
     # Structural relationships
-    # --------------------------------------------------------
-
     "structural": {
-
         # Mandatory:
         # If parent is active, child must be active.
+        # if child is active, parent must be active.
         "mandatory": {
 
-            "TeaStore": [
+            "AdaptableTeaStore": [
                 "WebUI",
                 "Persistence",
                 "ImageService",
@@ -45,56 +41,63 @@ feature_model = {
             ],
 
             "PageCompilation": [
-                "PageInfo",
+                "PageInformation",
                 "PageImages"
             ]
         },
 
         # Optional:
         # If parent is active, child may be active or inactive.
+        # if child is active, parent must be active.
         "optional": {
 
-            "TeaStore": [
-                "LocalAuth"
+            "AdaptableTeaStore": [
+                "Authorization", "Recommender"
             ],
 
             "PageCompilation": [
-                "CompilationWithRecommendations"
+                "CompilationWithRecom"
             ]
         },
 
         # XOR:
         # Exactly one child must be active when parent is active.
         "xor": {
-
+            
+            "Authorization":[
+                "LocalAuth",
+                "SSOAuth"
+                ],
+            "Persistence":[
+                "LocalCache",
+                "LocalStaticDB"
+            ],
+            "ImageService": [
+                "ImageProvider",
+                "LocalStaticImg"
+            ],
             "Recommender": [
                 "LowPower",
                 "FullPower"
-            ],
-
-            "Persistence": [
-                "LocalCache"
-            ],
-
-            "ImageService": [
-                "ImageProvider"
             ]
         },
 
         # OR:
         # At least one child must be active when parent is active.
         "or": {
-
-            "PageInfo": [
-                "BasicPageInfo"
-            ]
+            
+            "SSOAuth":[
+                "Google",
+                "Facebook"
+                ],
+            "PageInformation":[
+                "BasicPageInfo",
+                "AuthoPageInfo"
+                ]
         }
     },
 
-    # --------------------------------------------------------
     # Cross-tree constraints
-    # --------------------------------------------------------
-
     "cross_tree": {
 
         "requires": {
@@ -102,24 +105,35 @@ feature_model = {
             "WebUI": [
                 "PageCompilation"
             ],
-
             "PageCompilation": [
-                "ImageService"
-            ],
-
-            "CompilationWithRecommendations": [
-                "Recommender",
                 "Persistence",
                 "ImageService"
             ],
-
-            "Recommender": [
-                "Persistence",
-                "WebUI"
-            ],
-
-            "PageInfo": [
+            "PageInformation": [
                 "Persistence"
+            ],
+            "BasicPageInfo":[
+                "Persistence"
+                ],
+            "AuthoPageInfo":[
+                "Authorization"
+                ],
+            "PageImages":[
+                "ImageService"
+                ],
+            "CompilationWithRecom": [
+                "Persistence",
+                "ImageService",
+                "Recommender"
+            ],
+            "Recommender": [
+                "Persistence"
+            ],
+            "LowPower": [
+                "Persistence"
+            ],
+            "FullPower": [
+                "PageInformation"
             ]
         }
     }
