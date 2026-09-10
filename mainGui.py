@@ -1,130 +1,9 @@
 from collections import deque
 import tkinter as tk
 from tkinter import ttk, messagebox
+from barebone import initial_active
 
 
-# ============================================================
-# 1. FEATURE MODEL
-# ============================================================
-
-feature_model = {
-
-    "features": {
-        "TeaStore",
-        "WebUI",
-        "Persistence",
-        "ImageService",
-        "PageCompilation",
-        "PageInfo",
-        "PageImages",
-        "CompilationWithRecommendations",
-        "Recommender",
-        "LocalAuth",
-        "AuthPageInfo",
-        "LowPower",
-        "FullPower",
-        "LocalCache",
-        "ImageProvider",
-        "BasicPageInfo"
-    },
-
-    # --------------------------------------------------------
-    # Structural relationships
-    # --------------------------------------------------------
-
-    "structural": {
-
-        # Mandatory:
-        # If parent is active, child must be active.
-        "mandatory": {
-
-            "TeaStore": [
-                "WebUI",
-                "Persistence",
-                "ImageService",
-                "PageCompilation"
-            ],
-
-            "PageCompilation": [
-                "PageInfo",
-                "PageImages"
-            ]
-        },
-
-        # Optional:
-        # If parent is active, child may be active or inactive.
-        "optional": {
-
-            "TeaStore": [
-                "LocalAuth"
-            ],
-
-            "PageCompilation": [
-                "CompilationWithRecommendations"
-            ]
-        },
-
-        # XOR:
-        # Exactly one child must be active when parent is active.
-        "xor": {
-
-            "Recommender": [
-                "LowPower",
-                "FullPower"
-            ],
-
-            "Persistence": [
-                "LocalCache"
-            ],
-
-            "ImageService": [
-                "ImageProvider"
-            ]
-        },
-
-        # OR:
-        # At least one child must be active when parent is active.
-        "or": {
-
-            "PageInfo": [
-                "BasicPageInfo"
-            ]
-        }
-    },
-
-    # --------------------------------------------------------
-    # Cross-tree constraints
-    # --------------------------------------------------------
-
-    "cross_tree": {
-
-        "requires": {
-
-            "WebUI": [
-                "PageCompilation"
-            ],
-
-            "PageCompilation": [
-                "ImageService"
-            ],
-
-            "CompilationWithRecommendations": [
-                "Recommender",
-                "Persistence",
-                "ImageService"
-            ],
-
-            "Recommender": [
-                "Persistence",
-                "WebUI"
-            ],
-
-            "PageInfo": [
-                "Persistence"
-            ]
-        }
-    }
-}
 
 
 # ============================================================
@@ -449,12 +328,12 @@ class AdaptationEngine:
         # Root cannot be removed
         # ----------------------------------------------------
 
-        if feature == "TeaStore":
+        if feature == "AdaptableTeaStore":
 
             return (
                 False,
                 [
-                    "FAIL: Root feature TeaStore "
+                    "FAIL: Root feature AdaptableTeaStore "
                     "cannot be removed."
                 ]
             )
@@ -930,10 +809,10 @@ class AdaptationEngine:
         # Root validation
         # ----------------------------------------------------
 
-        if "TeaStore" not in active:
+        if "AdaptableTeaStore" not in active:
 
             messages.append(
-                "FAIL: Root feature TeaStore "
+                "FAIL: Root feature AdaptableTeaStore "
                 "must be active."
             )
 
@@ -948,7 +827,7 @@ class AdaptationEngine:
 
         for feature in active:
 
-            if feature == "TeaStore":
+            if feature == "AdaptableTeaStore":
                 continue
 
             parents = self.find_structural_parents(
@@ -1399,64 +1278,10 @@ class AdaptationEngine:
 # 5. INITIAL CONFIGURATION
 # ============================================================
 
-fm = FeatureModel(
-    feature_model
-)
 
 
-# This initial configuration satisfies:
-#
-# TeaStore
-# ├── WebUI
-# ├── Persistence
-# │   └── LocalCache       (XOR)
-# ├── ImageService
-# │   └── ImageProvider    (XOR)
-# └── PageCompilation
-#     ├── PageInfo
-#     │   └── BasicPageInfo (OR)
-#     └── PageImages
-#
-# Optional features:
-# - LocalAuth = OFF
-# - CompilationWithRecommendations = OFF
-# - Recommender = OFF
-
-initial_active = {
-
-    "TeaStore",
-
-    "WebUI",
-
-    "Persistence",
-    "LocalCache",
-
-    "ImageService",
-    "ImageProvider",
-
-    "PageCompilation",
-
-    "PageInfo",
-    "BasicPageInfo",
-
-    "PageImages"
-}
 
 
-configuration = Configuration(
-    fm,
-    initial_active
-)
-
-
-# ============================================================
-# 6. ADAPTATION ENGINE
-# ============================================================
-
-engine = AdaptationEngine(
-    fm,
-    configuration
-)
 
 
 # ============================================================
@@ -2149,7 +1974,7 @@ class MARJADAGUI:
             )
 
         self.insert_feature(
-            "TeaStore",
+            "AdaptableTeaStore",
             None,
             "root"
         )
@@ -2661,19 +2486,3 @@ class MARJADAGUI:
                 )
 
 
-# ============================================================
-# 8. RUN GUI
-# ============================================================
-
-if __name__ == "__main__":
-
-    root = tk.Tk()
-
-    app = MARJADAGUI(
-        root,
-        fm,
-        configuration,
-        engine
-    )
-
-    root.mainloop()
