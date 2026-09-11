@@ -80,70 +80,31 @@ class MARJADAGUI:
                 "bold"
             )
         )
-
-    # ========================================================
+        
+        
     # REFRESH DEPENDENT FEATURES
-    # ========================================================
 
     def refresh_dependent_features(self):
 
-        self.dependent_list.delete(
-            0,
-            tk.END
-        )
+        self.dependent_list.delete(0,tk.END)
 
-        feature = (
-            self.feature_combo.get()
-        )
+        feature = (self.feature_combo.get())
 
         if not feature:
-
             return
 
         # Current active configuration
-        active = (
-            self.configuration.active
-        )
+        #active = (self.configuration.active)
+        inactive = (self.configuration.inactive)
 
         # Reconstruction
-        dependent = (
-            self.engine.reconstruct_addition(
-                feature,
-                active
-            )
-        )
+        dependent = (self.engine.reconstruct_addition(feature,inactive))
+        print(dependent)
+        
+        # Sort the feature in the list according to its name
+        for dep in sorted(dependent):
+            self.dependent_list.insert(tk.END,dep)
 
-        # Requested feature নিজে dependent নয়
-        dependent.discard(
-            feature
-        )
-
-        # Only inactive dependent features
-        dependent = {
-            f
-            for f in dependent
-            if f not in active
-        }
-
-        for dep in sorted(
-            dependent
-        ):
-
-            self.dependent_list.insert(
-                tk.END,
-                dep
-            )
-
-        # Default select reconstructed dependencies
-        if dependent:
-
-            for index in range(
-                self.dependent_list.size()
-            ):
-
-                self.dependent_list.selection_set(
-                    index
-                )
 
     # ========================================================
     # MAIN GUI LAYOUT

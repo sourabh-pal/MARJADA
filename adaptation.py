@@ -352,144 +352,20 @@ class AdaptationEngine:
 
     
     # RECONSTRUCTION AFTER ADDITION
+    # it will consider all the inactive feature
+    # because the dependent feature are non deterministic.
+    # So, the developer need to choose the dependent feature 
+    # by themselves. If any dependent feature already active, it will
+    # not show in the dependent list.
 
-    def reconstruct_addition(self,feature,active):
+    def reconstruct_addition(self,feature,inactive):
+        
+        ChooseDependentFeature = inactive - {feature}
+        
+        return ChooseDependentFeature
+       
 
-        dependent = set()
-
-        queue = deque([feature])
-
-        visited = set()
-
-        while queue:
-
-            current = queue.popleft()
-
-            if current in visited:
-                continue
-
-            visited.add(current)
-
-            # Mandatory children
-
-            mandatory_children = (self.fm.structural["mandatory"].get(current,[]))
-
-            for child in mandatory_children:
-
-                if (child not in active and child not in dependent):
-
-                    dependent.add(child)
-
-                    queue.append(child)
-
-            # ------------------------------------------------
-            # XOR
-            # ------------------------------------------------
-
-            xor_children = (
-                self.fm.structural[
-                    "xor"
-                ].get(
-                    current,
-                    []
-                )
-            )
-
-            if xor_children:
-
-                active_children = [
-                    child
-                    for child in xor_children
-                    if child in active
-                ]
-
-                # If no XOR child is active,
-                # select one deterministically.
-                if not active_children:
-
-                    selected = sorted(
-                        xor_children
-                    )[0]
-
-                    if selected not in dependent:
-
-                        dependent.add(
-                            selected
-                        )
-
-                        queue.append(
-                            selected
-                        )
-
-            # ------------------------------------------------
-            # OR
-            # ------------------------------------------------
-
-            or_children = (
-                self.fm.structural[
-                    "or"
-                ].get(
-                    current,
-                    []
-                )
-            )
-
-            if or_children:
-
-                active_children = [
-                    child
-                    for child in or_children
-                    if child in active
-                ]
-
-                # If no OR child is active,
-                # select one deterministically.
-                if not active_children:
-
-                    selected = sorted(
-                        or_children
-                    )[0]
-
-                    if selected not in dependent:
-
-                        dependent.add(
-                            selected
-                        )
-
-                        queue.append(
-                            selected
-                        )
-
-            # ------------------------------------------------
-            # Requires
-            # ------------------------------------------------
-
-            required_features = (
-                self.fm.cross_tree[
-                    "requires"
-                ].get(
-                    current,
-                    []
-                )
-            )
-
-            for required in required_features:
-
-                if (
-                    required not in active
-                    and required not in dependent
-                ):
-
-                    dependent.add(
-                        required
-                    )
-
-                    queue.append(
-                        required
-                    )
-
-        return dependent
-
+        
     # ========================================================
     # RECONSTRUCTION AFTER REMOVAL
     # ========================================================
