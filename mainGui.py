@@ -99,7 +99,6 @@ class MARJADAGUI:
 
         # Reconstruction
         dependent = (self.engine.reconstruct_addition(feature,inactive))
-        print(dependent)
         
         # Sort the feature in the list according to its name
         for dep in sorted(dependent):
@@ -436,20 +435,15 @@ class MARJADAGUI:
                 self.refresh_dependent_features()
         )
 
-        # ----------------------------------------------------
+
         # Apply button
-        # ----------------------------------------------------
+        self.apply_button = ttk.Button(right,
+                                       text="Apply Adaptation",
+                                       command=self.apply_adaptation)
 
-        self.apply_button = ttk.Button(
-            right,
-            text="Apply Adaptation",
-            command=self.apply_adaptation
-        )
+        self.apply_button.pack(fill=tk.X,
+                               pady=5)
 
-        self.apply_button.pack(
-            fill=tk.X,
-            pady=5
-        )
 
         # ----------------------------------------------------
         # Verification result
@@ -598,49 +592,27 @@ class MARJADAGUI:
 
     def refresh_feature_combo(self):
 
-        operation = (
-            self.operation.get()
-        )
+        operation = (self.operation.get())
 
         if operation == "ADD":
-
-            values = sorted(
-                self.configuration.inactive
-            )
-
+            values = sorted(self.configuration.inactive)
         else:
-
             values = sorted(
                 self.configuration.active
             )
 
-        self.feature_combo["values"] = (
-            values
-        )
+        self.feature_combo["values"] = (values)
+        
+        self.feature_combo.set("Select Feature")
 
-        if values:
-
-            self.feature_combo.current(
-                0
-            )
-
-        else:
-
-            self.feature_combo.set(
-                ""
-            )
 
         # ADD হলে dependent features update
         if operation == "ADD":
-
             self.refresh_dependent_features()
-
         else:
+            self.dependent_list.delete(0,
+                                       tk.END)
 
-            self.dependent_list.delete(
-                0,
-                tk.END
-            )
 
     # ========================================================
     # REFRESH FEATURE TREE
@@ -843,9 +815,7 @@ class MARJADAGUI:
 
     def apply_adaptation(self):
 
-        operation = (
-            self.operation.get()
-        )
+        operation = (self.operation.get())
 
         feature = (
             self.feature_combo.get()
