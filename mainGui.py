@@ -922,12 +922,7 @@ class MARJADAGUI:
 
             }
 
-            success, messages = (
-                self.engine.add_feature(
-                    feature,
-                    dependent_features
-                )
-            )
+            success, messages = (self.engine.add_feature(feature,dependent_features))
 
         # ====================================================
         # REMOVE

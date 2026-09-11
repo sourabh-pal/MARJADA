@@ -17,6 +17,8 @@ if __name__ == "__main__":
     
     initial_active = barebone_features
     configuration = Configuration(fm,initial_active)
+    
+    
     engine = AdaptationEngine(fm,configuration)
 
 

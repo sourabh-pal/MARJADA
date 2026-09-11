@@ -8,14 +8,9 @@ class Configuration:
 
         self.feature_model = feature_model
 
-        self.active = set(
-            active_features
-        )
+        self.active = set(active_features)
 
-        self.inactive = (
-            self.feature_model.features
-            - self.active
-        )
+        self.inactive = (self.feature_model.features - self.active)
 
     # --------------------------------------------------------
     # Update configuration
@@ -23,12 +18,7 @@ class Configuration:
 
     def update(self, active_features):
 
-        self.active = set(
-            active_features
-        )
+        self.active = set(active_features)
 
-        self.inactive = (
-            self.feature_model.features
-            - self.active
-        )
+        self.inactive = (self.feature_model.features - self.active)
 

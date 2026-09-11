@@ -1,73 +1,39 @@
-# ============================================================
-# 4. ADAPTATION ENGINE
-# ============================================================
+
+# ADAPTATION ENGINE
 
 from collections import deque
 
 class AdaptationEngine:
 
-    def __init__(
-        self,
-        feature_model,
-        configuration
-    ):
+    def __init__(self, feature_model, configuration):
 
         self.fm = feature_model
         self.configuration = configuration
 
-    # ========================================================
     # FEATURE ADDITION
-    # ========================================================
 
-    def add_feature(
-        self,
-        feature,
-        selected_dependent_features=None
-    ):
+    def add_feature(self, feature, selected_dependent_features=None):
 
         messages = []
 
-        # ----------------------------------------------------
         # Check feature existence
-        # ----------------------------------------------------
 
         if feature not in self.fm.features:
 
-            return (
-                False,
-                [
-                    "FAIL: Feature does not exist "
-                    "in the feature model."
-                ]
-            )
+            return (False,["FAIL: Feature does not exist " "in the feature model."])
 
-        # ----------------------------------------------------
-        # Check current state
-        # ----------------------------------------------------
+        # Check whether feature is already in the active configuration
 
         if feature in self.configuration.active:
 
-            return (
-                False,
-                [
-                    "FAIL: Feature is already active."
-                ]
-            )
+            return (False,["FAIL: Feature is already active."])
 
-        old_active = set(
-            self.configuration.active
-        )
+        # present active configuration
+        old_active = set(self.configuration.active)
 
-        # ----------------------------------------------------
         # Reconstruction
-        # ----------------------------------------------------
 
-        reconstructed_features = (
-            self.reconstruct_addition(
-                feature,
-                old_active
-            )
-        )
+        reconstructed_features = (self.reconstruct_addition(feature,old_active))
 
         if selected_dependent_features is None:
 
@@ -384,21 +350,14 @@ class AdaptationEngine:
             messages
         )
 
-    # ========================================================
+    
     # RECONSTRUCTION AFTER ADDITION
-    # ========================================================
 
-    def reconstruct_addition(
-        self,
-        feature,
-        active
-    ):
+    def reconstruct_addition(self,feature,active):
 
         dependent = set()
 
-        queue = deque(
-            [feature]
-        )
+        queue = deque([feature])
 
         visited = set()
 
@@ -409,37 +368,19 @@ class AdaptationEngine:
             if current in visited:
                 continue
 
-            visited.add(
-                current
-            )
+            visited.add(current)
 
-            # ------------------------------------------------
             # Mandatory children
-            # ------------------------------------------------
 
-            mandatory_children = (
-                self.fm.structural[
-                    "mandatory"
-                ].get(
-                    current,
-                    []
-                )
-            )
+            mandatory_children = (self.fm.structural["mandatory"].get(current,[]))
 
             for child in mandatory_children:
 
-                if (
-                    child not in active
-                    and child not in dependent
-                ):
+                if (child not in active and child not in dependent):
 
-                    dependent.add(
-                        child
-                    )
+                    dependent.add(child)
 
-                    queue.append(
-                        child
-                    )
+                    queue.append(child)
 
             # ------------------------------------------------
             # XOR
