@@ -143,3 +143,23 @@ feature_model = {
     }
 }
 
+
+barebone_features = {
+
+    "AdaptableTeaStore",
+
+    "WebUI",
+
+    "Persistence",
+    "LocalCache",
+
+    "ImageService",
+    "ImageProvider",
+
+    "PageCompilation",
+
+    "PageInfo",
+    "BasicPageInfo",
+
+    "PageImages"
+}

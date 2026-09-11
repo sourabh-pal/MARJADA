@@ -2,11 +2,10 @@
 
 from mainGui import MARJADAGUI
 import tkinter as tk
-from data import feature_model, root_feature
+from data import root_feature, feature_model, barebone_features
 from model import FeatureModel
 from config import Configuration
 from adaptation import AdaptationEngine
-from barebone import initial_active, VerifyBarebone
 
 
 if __name__ == "__main__":
@@ -15,9 +14,8 @@ if __name__ == "__main__":
     
     # get the feature model with structural, and cross-tree constraints relations.
     fm = FeatureModel(feature_model)
-    callVerifyBarebone = VerifyBarebone(root_feature, fm)
-    isInitialState = callVerifyBarebone.is_initial_active_configuration(root_feature, fm)
     
+    initial_active = barebone_features
     configuration = Configuration(fm,initial_active)
     engine = AdaptationEngine(fm,configuration)
 

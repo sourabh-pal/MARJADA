@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from barebone import initial_active
-
+from data import barebone_features
 
 
 
@@ -995,7 +994,7 @@ class MARJADAGUI:
     def reset_configuration(self):
 
         self.configuration.update(
-            initial_active
+            barebone_features
         )
 
         self.result_text.delete(
