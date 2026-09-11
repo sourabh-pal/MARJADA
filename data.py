@@ -1,4 +1,8 @@
+
 #Feature Model Configuration
+
+root_feature = "AdaptableTeaStore"
+
 feature_model = {
 
     "features": {
