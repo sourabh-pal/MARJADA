@@ -513,9 +513,9 @@ class AdaptationEngine:
             return (False,messages)
 
 
-        # Mandatory validation
-        
-        # if parent is active the child must be active
+        # MANDATORY VALIDATION:
+        # Two types of mandatory validation
+        # 1. if parent is active the child must be active
         for (parent,children) in self.fm.structural[
             "mandatory"].items():
 
@@ -533,10 +533,7 @@ class AdaptationEngine:
 
                         return (False, messages)
                     
-        # if child is active then parent must be active
-        for (parent,children) in self.fm.structural[
-            "mandatory"].items():
-            
+            # 2. if child is active then parent must be active    
             for child in children:
                 
                 if child in active:
@@ -551,6 +548,54 @@ class AdaptationEngine:
                         
                         return(False, messages)
                         
+
+        
+        # XOR VALIDATION
+        
+        for (parent,children) in self.fm.structural["xor"].items():
+
+            # if parent is active then exactly one child must be active
+            if parent in active:
+                
+                count = 0
+                for child in children:
+                    if child in active:
+                        count = count + 1
+
+                if count != 1:
+
+                    messages.append(
+                        f"FAIL: XOR violation at {parent}. "
+                        f"Exactly one of "
+                        f"{children} must be active."
+                    )
+
+                    return (False,messages)
+            
+            # if exactly one children is active then 
+            # parent must be active
+            else:
+                count = 0
+                for child in children:
+                    if child in active:
+                        count = count + 1
+                
+                # if one or more children active but
+                # the parent is inactive
+                if count >= 1:
+                    if parent not in active:
+                        
+                        messages.append(
+                        f"FAIL: XOR violation at {children}. "
+                        f"The {parent} must be active. "
+                        f"Exactly one {children} must be active. "
+                        )
+                        return (False,messages)
+                
+                    
+                    
+                 
+        
 
         # ----------------------------------------------------
         # Child -> Parent validation
@@ -585,37 +630,7 @@ class AdaptationEngine:
                     )
 
 
-        # ----------------------------------------------------
-        # XOR validation
-        # ----------------------------------------------------
-
-        for (
-            parent,
-            children
-        ) in self.fm.structural[
-            "xor"
-        ].items():
-
-            if parent in active:
-
-                count = sum(
-                    child in active
-                    for child in children
-                )
-
-                if count != 1:
-
-                    messages.append(
-                        f"FAIL: XOR violation at {parent}. "
-                        f"Exactly one of "
-                        f"{children} must be active."
-                    )
-
-                    return (
-                        False,
-                        messages
-                    )
-
+       
         # ----------------------------------------------------
         # OR validation
         # ----------------------------------------------------
