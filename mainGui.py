@@ -586,9 +586,7 @@ class MARJADAGUI:
                 feature
             )
 
-    # ========================================================
     # REFRESH FEATURE COMBOBOX
-    # ========================================================
 
     def refresh_feature_combo(self):
 
@@ -606,12 +604,11 @@ class MARJADAGUI:
         self.feature_combo.set("Select Feature")
 
 
-        # ADD হলে dependent features update
+        # if ADD then dependent features update
         if operation == "ADD":
             self.refresh_dependent_features()
         else:
-            self.dependent_list.delete(0,
-                                       tk.END)
+            self.dependent_list.delete(0, tk.END)
 
 
     # ========================================================
@@ -815,45 +812,27 @@ class MARJADAGUI:
 
     def apply_adaptation(self):
 
+        # select the operation ADD or REMOVE
         operation = (self.operation.get())
+        
+        # select the feature want to be ADD
+        feature = (self.feature_combo.get())
 
-        feature = (
-            self.feature_combo.get()
-        )
-
-        # ----------------------------------------------------
-        # Check feature
-        # ----------------------------------------------------
-
-        if not feature:
-
-            messagebox.showwarning(
-                "No Feature Selected",
-                "Please select py feature."
-            )
-
-            return
-
-        # ====================================================
         # ADD
-        # ====================================================
 
         if operation == "ADD":
 
             # Get selected dependent features
             selected_indices = (
-                self.dependent_list.curselection()
-            )
+                self.dependent_list.curselection())
 
             dependent_features = {
-
                 self.dependent_list.get(i)
+                for i in selected_indices}
 
-                for i in selected_indices
+            success, messages = (self.engine.add_feature
+                                 (feature,dependent_features))
 
-            }
-
-            success, messages = (self.engine.add_feature(feature,dependent_features))
 
         # ====================================================
         # REMOVE

@@ -33,69 +33,30 @@ class AdaptationEngine:
 
         # Reconstruction
 
-        reconstructed_features = (self.reconstruct_addition(feature,old_active))
+        reconstructed_features = (self.reconstruct_addition
+                                  (feature,old_active))
 
         if selected_dependent_features is None:
 
             selected_dependent_features = set()
 
         selected_dependent_features = set(
-            selected_dependent_features
-        )
+            selected_dependent_features)
 
-        # ----------------------------------------------------
-        # Check selected dependent features
-        # ----------------------------------------------------
+    
 
-        if not selected_dependent_features.issubset(
-            reconstructed_features
-        ):
+        dependent_features = (selected_dependent_features)
 
-            return (
-                False,
-                [
-                    "FAIL: Selected dependent feature set "
-                    "is not consistent with the feature model."
-                ]
-            )
 
-        dependent_features = (
-            selected_dependent_features
-        )
-
-        # ----------------------------------------------------
         # Construct new configuration
-        # ----------------------------------------------------
+        
+        new_active = (old_active 
+                      | dependent_features 
+                      | {feature})
 
-        new_active = (
-            old_active
-            | dependent_features
-            | {feature}
-        )
+        messages.append(f"Requested addition: {feature}")
 
-        messages.append(
-            f"Requested addition: {feature}"
-        )
-
-        # ----------------------------------------------------
-        # Show dependent features
-        # ----------------------------------------------------
-
-        if dependent_features:
-
-            messages.append(
-                "Dependent features reconstructed: "
-                + ", ".join(
-                    sorted(dependent_features)
-                )
-            )
-
-        else:
-
-            messages.append(
-                "Dependent features reconstructed: None"
-            )
-
+        
         # ====================================================
         # STRUCTURAL VALIDATION
         # ====================================================
