@@ -2,6 +2,7 @@
 # ADAPTATION ENGINE
 
 from collections import deque
+from data import root_feature
 
 class AdaptationEngine:
 
@@ -57,26 +58,15 @@ class AdaptationEngine:
         messages.append(f"Requested addition: {feature}")
 
         
-        # ====================================================
         # STRUCTURAL VALIDATION
-        # ====================================================
 
         structural_ok, structural_messages = (
-            self.validate_structural(
-                new_active
-            )
-        )
+            self.validate_structural(new_active))
 
-        messages.extend(
-            structural_messages
-        )
+        messages.extend(structural_messages)
 
         if not structural_ok:
-
-            return (
-                False,
-                messages
-            )
+            return (False,messages)
 
         # ====================================================
         # CROSS-TREE VALIDATION
@@ -189,12 +179,12 @@ class AdaptationEngine:
         # Root cannot be removed
         # ----------------------------------------------------
 
-        if feature == "TeaStore":
+        if feature == "AdaptableTeaStore":
 
             return (
                 False,
                 [
-                    "FAIL: Root feature TeaStore "
+                    "FAIL: Root feature AdaptableTeaStore "
                     "cannot be removed."
                 ]
             )
@@ -506,32 +496,61 @@ class AdaptationEngine:
 
         return parents
 
-    # ========================================================
-    # STRUCTURAL VALIDATION
-    # ========================================================
 
-    def validate_structural(
-        self,
-        active
-    ):
+    # STRUCTURAL VALIDATION
+
+    def validate_structural(self, active):
 
         messages = []
 
-        # ----------------------------------------------------
         # Root validation
-        # ----------------------------------------------------
 
-        if "TeaStore" not in active:
-
+        if root_feature not in active:
             messages.append(
-                "FAIL: Root feature TeaStore "
-                "must be active."
-            )
+                "FAIL: Root feature AdaptableTeaStore "
+                "must be active.")
 
-            return (
-                False,
-                messages
-            )
+            return (False,messages)
+
+
+        # Mandatory validation
+        
+        # if parent is active the child must be active
+        for (parent,children) in self.fm.structural[
+            "mandatory"].items():
+
+            if parent in active:
+
+                for child in children:
+
+                    if child not in active:
+
+                        messages.append(
+                            f"FAIL: Mandatory feature "
+                            f"{child} is missing from "
+                            f"active configuration."
+                        )
+
+                        return (False, messages)
+                    
+        # if child is active then parent must be active
+        for (parent,children) in self.fm.structural[
+            "mandatory"].items():
+            
+            for child in children:
+                
+                if child in active:
+                    
+                    if parent not in active:
+                        
+                        messages.append(
+                            f"FAIL: Mandatory feature "
+                            f"{parent} is missing from "
+                            f"active configuration."
+                            )
+                        
+                        return(False, messages)
+                        
 
         # ----------------------------------------------------
         # Child -> Parent validation
@@ -539,7 +558,7 @@ class AdaptationEngine:
 
         for feature in active:
 
-            if feature == "TeaStore":
+            if feature == "AdaptableTeaStore":
                 continue
 
             parents = self.find_structural_parents(
@@ -565,33 +584,6 @@ class AdaptationEngine:
                         messages
                     )
 
-        # ----------------------------------------------------
-        # Mandatory validation
-        # ----------------------------------------------------
-
-        for (
-            parent,
-            children
-        ) in self.fm.structural[
-            "mandatory"
-        ].items():
-
-            if parent in active:
-
-                for child in children:
-
-                    if child not in active:
-
-                        messages.append(
-                            f"FAIL: Mandatory feature "
-                            f"{child} is missing from "
-                            f"active configuration."
-                        )
-
-                        return (
-                            False,
-                            messages
-                        )
 
         # ----------------------------------------------------
         # XOR validation
