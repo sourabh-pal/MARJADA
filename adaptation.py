@@ -635,12 +635,8 @@ class AdaptationEngine:
 
         messages = []
 
-        for (
-            source,
-            targets
-        ) in self.fm.cross_tree[
-            "requires"
-        ].items():
+        for (source, targets) in self.fm.cross_tree["requires"
+                                                    ].items():
 
             if source in active:
 
@@ -653,10 +649,7 @@ class AdaptationEngine:
                             f"{target}."
                         )
 
-                        return (
-                            False,
-                            messages
-                        )
+                        return (False, messages)
 
         messages.append(
             "PASS: Cross-tree validation."
