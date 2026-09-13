@@ -81,9 +81,8 @@ class AdaptationEngine:
 
             return (False, messages)
 
-        # ====================================================
+
         # INVOCATION PATH VALIDATION
-        # ====================================================
 
         path = self.find_invocation_path(
             new_active,
@@ -647,18 +646,31 @@ class AdaptationEngine:
                         messages.append(
                             f"FAIL: {source} requires "
                             f"{target}."
-                        )
+                            )
 
                         return (False, messages)
 
-        messages.append(
-            "PASS: Cross-tree validation."
-        )
+        
+        for (source, targets) in self.fm.cross_tree["excludes"
+                                                    ].items():
 
-        return (
-            True,
-            messages
-        )
+            if source in active:
+
+                for target in targets:
+
+                    if target in active:
+
+                        messages.append(
+                            f"FAIL: {source} excludes "
+                            f"{target}."
+                            )
+
+                        return (False, messages)
+        
+        messages.append("PASS: Cross-tree validation.")
+
+
+        return (True, messages)
 
     # ========================================================
     # INVOCATION FEATURES

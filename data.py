@@ -141,7 +141,10 @@ feature_model = {
             "FullPower": [
                 "PageInformation"
             ]
-        }
+        },
+        
+        "excludes":{
+            }
     }
 }
 
