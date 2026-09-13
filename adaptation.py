@@ -593,10 +593,34 @@ class AdaptationEngine:
                         return (False,messages)
                 
                     
-                    
-                 
-        
+        # OR VALIDATION
+    
+        for (parent, children) in self.fm.structural["or"].items():
 
+            if parent in active:
+                
+                count = sum(child in active for child in children)
+
+                if count < 1:
+
+                    messages.append(
+                        f"FAIL: OR violation at {parent}. "
+                        f"At least one child must be active."
+                        )
+
+                    return (False, messages)
+            elif parent not in active:
+                
+                count = sum(child in active for child in children)
+                
+                if count > 0:
+                    
+                    messages.append(
+                        f"FAIL: OR violation at {children}. "
+                        f"The {parent} must be active."
+                        )
+        
+        
         # ----------------------------------------------------
         # Child -> Parent validation
         # ----------------------------------------------------
@@ -629,46 +653,18 @@ class AdaptationEngine:
                         messages
                     )
 
+            
+                    
+                    
+        messages.append("PASS: Structural validation.")
+
+        return (True, messages)            
+                 
+        
+
 
        
-        # ----------------------------------------------------
-        # OR validation
-        # ----------------------------------------------------
-
-        for (
-            parent,
-            children
-        ) in self.fm.structural[
-            "or"
-        ].items():
-
-            if parent in active:
-
-                count = sum(
-                    child in active
-                    for child in children
-                )
-
-                if count < 1:
-
-                    messages.append(
-                        f"FAIL: OR violation at {parent}. "
-                        f"At least one child must be active."
-                    )
-
-                    return (
-                        False,
-                        messages
-                    )
-
-        messages.append(
-            "PASS: Structural validation."
-        )
-
-        return (
-            True,
-            messages
-        )
+       
 
     # ========================================================
     # CROSS-TREE VALIDATION
