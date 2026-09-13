@@ -225,40 +225,23 @@ class AdaptationEngine:
                 "Dependent features removed: None"
             )
 
-        # ====================================================
         # STRUCTURAL VALIDATION
-        # ====================================================
 
         structural_ok, structural_messages = (
-            self.validate_structural(
-                new_active
-            )
-        )
+            self.validate_structural(new_active))
 
-        messages.extend(
-            structural_messages
-        )
+        messages.extend(structural_messages)
 
         if not structural_ok:
 
-            return (
-                False,
-                messages
-            )
+            return (False, messages)
 
-        # ====================================================
         # CROSS-TREE VALIDATION
-        # ====================================================
 
         cross_tree_ok, cross_tree_messages = (
-            self.validate_cross_tree(
-                new_active
-            )
-        )
+            self.validate_cross_tree(new_active))
 
-        messages.extend(
-            cross_tree_messages
-        )
+        messages.extend(cross_tree_messages)
 
         if not cross_tree_ok:
 
@@ -646,14 +629,9 @@ class AdaptationEngine:
                  
        
 
-    # ========================================================
     # CROSS-TREE VALIDATION
-    # ========================================================
 
-    def validate_cross_tree(
-        self,
-        active
-    ):
+    def validate_cross_tree(self, active):
 
         messages = []
 
