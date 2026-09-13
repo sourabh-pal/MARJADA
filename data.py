@@ -3,6 +3,8 @@
 
 root_feature = "AdaptableTeaStore"
 
+invocation_feature = "WebUI"
+
 feature_model = {
 
     "features": {
@@ -156,10 +158,8 @@ barebone_features = {
     "ImageService",
     "ImageProvider",
 
-    "PageCompilation",
 
-    "PageInfo",
-    "BasicPageInfo",
-
+    "PageInformation",
+   
     "PageImages"
 }

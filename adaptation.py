@@ -3,6 +3,7 @@
 
 from collections import deque
 from data import root_feature
+from numpy.distutils.conv_template import paren_repl
 
 class AdaptationEngine:
 
@@ -34,8 +35,8 @@ class AdaptationEngine:
 
         # Reconstruction
 
-        reconstructed_features = (self.reconstruct_addition
-                                  (feature,old_active))
+        # reconstructed_features = (self.reconstruct_addition
+        #                          (feature,old_active))
 
         if selected_dependent_features is None:
 
@@ -68,26 +69,17 @@ class AdaptationEngine:
         if not structural_ok:
             return (False,messages)
 
-        # ====================================================
+
         # CROSS-TREE VALIDATION
-        # ====================================================
 
         cross_tree_ok, cross_tree_messages = (
-            self.validate_cross_tree(
-                new_active
-            )
-        )
+            self.validate_cross_tree(new_active))
 
-        messages.extend(
-            cross_tree_messages
-        )
+        messages.extend(cross_tree_messages)
 
         if not cross_tree_ok:
 
-            return (
-                False,
-                messages
-            )
+            return (False, messages)
 
         # ====================================================
         # INVOCATION PATH VALIDATION
@@ -462,39 +454,42 @@ class AdaptationEngine:
 
         return False
 
-    # ========================================================
-    # GET STRUCTURAL PARENT
-    # ========================================================
-
-    def find_structural_parents(
-        self,
-        feature
-    ):
-
-        parents = []
-
-        for relation_type in [
-            "mandatory",
-            "optional",
-            "xor",
-            "or"
-        ]:
-
-            relations = (
-                self.fm.structural[
-                    relation_type
-                ]
-            )
-
-            for parent, children in relations.items():
-
-                if feature in children:
-
-                    parents.append(
-                        parent
-                    )
-
-        return parents
+    
+    
+    # It need to check that the feature we are adding 
+    # is reachable from the root feature.
+    # So, there should be direct and continuous path from
+    # the root feature to the feature is going to be added.
+    def find_feature_path(self, feature):
+        
+        featuresInPath = set()
+        
+        flag_feature = feature
+        featuresInPath.add(feature)
+        
+        while flag_feature != root_feature:
+            
+            parent_found = False
+            
+            for relation_types in ["mandatory", "optional", 
+                                   "xor", "or"]:
+            
+                relations = (self.fm.structural[relation_types])
+            
+                for parent, children in relations.items():
+                
+                    for child in children:
+                    
+                        if child == flag_feature:
+                            featuresInPath.add(parent)
+                            flag_feature = parent
+                            parent_found = True
+                            break
+                
+                if parent_found:
+                    break
+        
+        return featuresInPath
 
 
     # STRUCTURAL VALIDATION
@@ -511,7 +506,8 @@ class AdaptationEngine:
                 "must be active.")
 
             return (False,messages)
-
+        
+        
 
         # MANDATORY VALIDATION:
         # Two types of mandatory validation
@@ -621,49 +617,33 @@ class AdaptationEngine:
                         )
         
         
-        # ----------------------------------------------------
-        # Child -> Parent validation
-        # ----------------------------------------------------
-
+       
+        # Check whether the Functional Path exist
+        # from the root feature to the activating feature.
+        # In case, there is inconsistent with the functional
+        # path, then the inactive feature in the path
+        # must be add as a dependent feature by the developer.
         for feature in active:
-
-            if feature == "AdaptableTeaStore":
-                continue
-
-            parents = self.find_structural_parents(
-                feature
-            )
-
-            # If feature has a structural parent,
-            # at least one parent must be active.
-            if parents:
-
-                if not any(
-                    parent in active
-                    for parent in parents
-                ):
-
-                    messages.append(
-                        f"FAIL: Structural parent of "
-                        f"{feature} is inactive."
-                    )
-
-                    return (
-                        False,
-                        messages
-                    )
-
             
-                    
+            if feature == root_feature:
+                continue
+            
+            ParentPath = self.find_feature_path(feature)
+            ParentPath.add(feature)
+            
+            if not ParentPath.issubset(active):
+                
+                messages.append(
+                    f"FAIL: The Functional Path {ParentPath} is "
+                    f"inconsistent with to activate the feature."
+                    )
+                return (False, messages)
+                                     
                     
         messages.append("PASS: Structural validation.")
 
         return (True, messages)            
                  
-        
-
-
-       
        
 
     # ========================================================
