@@ -2,7 +2,7 @@
 # ADAPTATION ENGINE
 
 from collections import deque
-from data import root_feature
+from data import root_feature, invocation_features
 from numpy.distutils.conv_template import paren_repl
 
 class AdaptationEngine:
@@ -671,58 +671,21 @@ class AdaptationEngine:
         return (True, messages)
 
 
-    # ========================================================
     # BUILD ACTIVE GRAPH
-    # ========================================================
 
-    def build_graph(
-        self,
-        active
-    ):
+    def build_graph(self, active):
 
-        graph = {
-            feature: []
-            for feature in active
-        }
+        graph = {feature: [] for feature in active}
+        
+        print(graph)
 
-        # ----------------------------------------------------
         # Structural relations
-        # ----------------------------------------------------
+        
+        for relation_type in ["mandatory", "optional", "xor", "or"]:
 
-        relation_groups = [
-            (
-                "mandatory",
-                "mandatory"
-            ),
-            (
-                "optional",
-                "optional"
-            ),
-            (
-                "xor",
-                "XOR"
-            ),
-            (
-                "or",
-                "OR"
-            )
-        ]
+            relations = (self.fm.structural[relation_type])
 
-        for (
-            relation_type,
-            relation_name
-        ) in relation_groups:
-
-            relations = (
-                self.fm.structural[
-                    relation_type
-                ]
-            )
-
-            for (
-                parent,
-                children
-            ) in relations.items():
+            for (parent, children) in relations.items():
 
                 if parent not in active:
                     continue
@@ -731,23 +694,12 @@ class AdaptationEngine:
 
                     if child in active:
 
-                        graph[parent].append(
-                            (
-                                child,
-                                relation_name
-                            )
-                        )
+                        graph[parent].append((child, relation_type))
+                        
 
-        # ----------------------------------------------------
         # Requires relations
-        # ----------------------------------------------------
 
-        for (
-            source,
-            targets
-        ) in self.fm.cross_tree[
-            "requires"
-        ].items():
+        for (source, targets) in self.fm.cross_tree["requires"].items():
 
             if source not in active:
                 continue
@@ -756,26 +708,22 @@ class AdaptationEngine:
 
                 if target in active:
 
-                    graph[source].append(
-                        (
-                            target,
-                            "requires"
-                        )
-                    )
+                    graph[source].append((target, "requires"))
+                    
+        
+        print(graph)
 
         return graph
 
- 
+    
+
+    
+    
     # FIND INVOCATION PATH
 
     def find_invocation_path(self, active, target):
 
-        invocation_features = (self.find_invocation_features(
-            active))
-
-        graph = self.build_graph(
-            active
-        )
+        graph = self.build_graph(active)
 
         queue = deque()
 
@@ -783,30 +731,18 @@ class AdaptationEngine:
 
         parent = {}
 
-        # ----------------------------------------------------
         # Start BFS from invocation features
-        # ----------------------------------------------------
 
-        for invocation_feature in (
-            invocation_features
-        ):
+        for invocation_feature in (invocation_features):
 
-            queue.append(
-                invocation_feature
-            )
+            queue.append(invocation_feature)
 
-            visited.add(
-                invocation_feature
-            )
+            visited.add(invocation_feature)
 
-            parent[
-                invocation_feature
-            ] = None
+            parent[invocation_feature] = None
 
-        # ----------------------------------------------------
         # BFS
-        # ----------------------------------------------------
-
+    
         while queue:
 
             current = queue.popleft()
@@ -814,13 +750,7 @@ class AdaptationEngine:
             if current == target:
                 break
 
-            for (
-                next_feature,
-                relation
-            ) in graph.get(
-                current,
-                []
-            ):
+            for (next_feature, relation) in graph.get(current, []):
 
                 if next_feature not in visited:
 
