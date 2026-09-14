@@ -3,7 +3,7 @@
 
 root_feature = "AdaptableTeaStore"
 
-invocation_feature = "WebUI"
+invocation_feature = {"WebUI"}
 
 feature_model = {
 

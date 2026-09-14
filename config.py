@@ -12,9 +12,7 @@ class Configuration:
 
         self.inactive = (self.feature_model.features - self.active)
 
-    # --------------------------------------------------------
     # Update configuration
-    # --------------------------------------------------------
 
     def update(self, active_features):
 
