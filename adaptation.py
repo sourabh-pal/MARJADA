@@ -3,7 +3,7 @@
 
 from collections import deque
 from data import root_feature, invocation_features
-from numpy.distutils.conv_template import paren_repl
+#from numpy.distutils.conv_template import paren_repl
 
 class AdaptationEngine:
 
@@ -34,9 +34,6 @@ class AdaptationEngine:
         old_active = set(self.configuration.active)
 
         # Reconstruction
-
-        # reconstructed_features = (self.reconstruct_addition
-        #                          (feature,old_active))
 
         if selected_dependent_features is None:
 
@@ -93,38 +90,22 @@ class AdaptationEngine:
                 "FAIL: No invocation path exists "
                 "from an active invocation feature "
                 "to the added feature."
-            )
+                )
 
-            return (
-                False,
-                messages
-            )
+            return (False, messages)
 
-        messages.append(
-            "PASS: Invocation-path validation."
-        )
+        messages.append("PASS: Invocation-path validation.")
 
-        messages.append(
-            "Invocation path: "
-            + self.format_path(path)
-        )
-
-        # ----------------------------------------------------
         # Accept configuration
-        # ----------------------------------------------------
 
-        self.configuration.update(
-            new_active
-        )
+        self.configuration.update(new_active)
 
         messages.append(
             f"VALID: {feature} was added successfully."
-        )
+            )
 
-        return (
-            True,
-            messages
-        )
+        return (True, messages)
+    
 
     # ========================================================
     # FEATURE REMOVAL
@@ -711,7 +692,7 @@ class AdaptationEngine:
                     graph[source].append((target, "requires"))
                     
         
-        print(graph)
+        #print(graph)
 
         return graph
 
@@ -754,32 +735,19 @@ class AdaptationEngine:
 
                 if next_feature not in visited:
 
-                    visited.add(
-                        next_feature
-                    )
+                    visited.add(next_feature)
 
-                    parent[
-                        next_feature
-                    ] = (
-                        current,
-                        relation
-                    )
+                    parent[next_feature] = (current, relation)
 
-                    queue.append(
-                        next_feature
-                    )
+                    queue.append(next_feature)
 
-        # ----------------------------------------------------
         # Target unreachable
-        # ----------------------------------------------------
 
         if target not in visited:
 
             return None
 
-        # ----------------------------------------------------
         # Reconstruct path
-        # ----------------------------------------------------
 
         path = []
 
@@ -787,31 +755,17 @@ class AdaptationEngine:
 
         while current is not None:
 
-            previous_info = (
-                parent[current]
-            )
+            previous_info = (parent[current])
 
             if previous_info is None:
 
-                path.append(
-                    (
-                        current,
-                        None
-                    )
-                )
+                path.append((current,None))
 
                 break
 
-            previous, relation = (
-                previous_info
-            )
+            previous, relation = (previous_info)
 
-            path.append(
-                (
-                    current,
-                    relation
-                )
-            )
+            path.append((current, relation))
 
             current = previous
 
@@ -819,14 +773,10 @@ class AdaptationEngine:
 
         return path
 
-    # ========================================================
-    # FORMAT PATH
-    # ========================================================
 
-    def format_path(
-        self,
-        path
-    ):
+    # FORMAT PATH
+
+    def format_path(self, path):
 
         if not path:
 
@@ -834,18 +784,12 @@ class AdaptationEngine:
 
         result = path[0][0]
 
-        for i in range(
-            1,
-            len(path)
-        ):
+        for i in range(1, len(path)):
 
             feature = path[i][0]
 
             relation = path[i][1]
 
-            result += (
-                f" --{relation}--> "
-                f"{feature}"
-            )
+            result += (f" --{relation}--> "f"{feature}")
 
         return result

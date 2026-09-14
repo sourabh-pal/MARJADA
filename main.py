@@ -2,7 +2,7 @@
 
 from mainGui import MARJADAGUI
 import tkinter as tk
-from data import root_feature, feature_model, barebone_features
+from data import feature_model, barebone_features
 from model import FeatureModel
 from config import Configuration
 from adaptation import AdaptationEngine
