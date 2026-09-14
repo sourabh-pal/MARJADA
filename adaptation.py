@@ -84,10 +84,8 @@ class AdaptationEngine:
 
         # INVOCATION PATH VALIDATION
 
-        path = self.find_invocation_path(
-            new_active,
-            feature
-        )
+        path = self.find_invocation_path(new_active,
+                                         feature)
 
         if path is None:
 
@@ -672,27 +670,6 @@ class AdaptationEngine:
 
         return (True, messages)
 
-    # ========================================================
-    # INVOCATION FEATURES
-    # ========================================================
-
-    def find_invocation_features(
-        self,
-        active
-    ):
-
-        # For the current TeaStore example,
-        # WebUI is the invocation feature.
-
-        invocation_features = set()
-
-        if "WebUI" in active:
-
-            invocation_features.add(
-                "WebUI"
-            )
-
-        return invocation_features
 
     # ========================================================
     # BUILD ACTIVE GRAPH
@@ -788,21 +765,13 @@ class AdaptationEngine:
 
         return graph
 
-    # ========================================================
+ 
     # FIND INVOCATION PATH
-    # ========================================================
 
-    def find_invocation_path(
-        self,
-        active,
-        target
-    ):
+    def find_invocation_path(self, active, target):
 
-        invocation_features = (
-            self.find_invocation_features(
-                active
-            )
-        )
+        invocation_features = (self.find_invocation_features(
+            active))
 
         graph = self.build_graph(
             active
