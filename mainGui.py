@@ -51,9 +51,7 @@ class MARJADAGUI:
 
         try:
 
-            style.theme_use(
-                "clam"
-            )
+            style.theme_use("clam")
 
         except tk.TclError:
 
@@ -61,21 +59,13 @@ class MARJADAGUI:
 
         style.configure(
             "Title.TLabel",
-            font=(
-                "Arial",
-                22,
-                "bold"
+            font=("Arial", 22, "bold")
             )
-        )
 
         style.configure(
             "Section.TLabel",
-            font=(
-                "Arial",
-                13,
-                "bold"
+            font=("Arial", 13, "bold")
             )
-        )
         
         
     # REFRESH DEPENDENT FEATURES
@@ -400,9 +390,7 @@ class MARJADAGUI:
             padx=8
         )
 
-        # ----------------------------------------------------
         # Dependent features
-        # ----------------------------------------------------
 
         ttk.Label(
             request_frame,
@@ -447,10 +435,8 @@ class MARJADAGUI:
                                pady=5)
 
 
-        # ----------------------------------------------------
         # Verification result
-        # ----------------------------------------------------
-
+        
         result_label = ttk.Label(
             right,
             text="Verification Result",
@@ -477,10 +463,9 @@ class MARJADAGUI:
             expand=True
         )
 
-        # ====================================================
+       
         # BOTTOM BUTTONS
-        # ====================================================
-
+        
         bottom = ttk.Frame(
             self.root
         )
@@ -524,20 +509,16 @@ class MARJADAGUI:
             side=tk.RIGHT
         )
 
-        # ----------------------------------------------------
         # Operation change event
-        # ----------------------------------------------------
-
+       
         self.operation.bind(
             "<<ComboboxSelected>>",
             lambda event:
                 self.refresh_feature_combo()
         )
 
-    # ========================================================
     # REFRESH EVERYTHING
-    # ========================================================
-
+    
     def refresh_all(self):
 
         self.refresh_configuration()
@@ -546,15 +527,11 @@ class MARJADAGUI:
 
         self.refresh_tree()
 
-    # ========================================================
     # REFRESH CONFIGURATION
-    # ========================================================
 
     def refresh_configuration(self):
 
-        # ----------------------------------------------------
         # Active
-        # ----------------------------------------------------
 
         self.active_list.delete(
             0,
@@ -570,9 +547,7 @@ class MARJADAGUI:
                 feature
             )
 
-        # ----------------------------------------------------
         # Inactive
-        # ----------------------------------------------------
 
         self.inactive_list.delete(
             0,
@@ -614,71 +589,44 @@ class MARJADAGUI:
             #self.dependent_list.delete(0, tk.END)
 
 
-    # ========================================================
     # REFRESH FEATURE TREE
-    # ========================================================
 
     def refresh_tree(self):
 
         for item in self.tree.get_children():
 
-            self.tree.delete(
-                item
-            )
+            self.tree.delete(item)
 
         self.insert_feature(
             "AdaptableTeaStore",
             None,
             "root"
-        )
+            )
 
-    # ========================================================
     # INSERT FEATURE
-    # ========================================================
+  
+    def insert_feature(self, feature, parent_id, relation ):
 
-    def insert_feature(
-        self,
-        feature,
-        parent_id,
-        relation
-    ):
-
-        state = (
-            "ACTIVE"
-            if feature in self.configuration.active
-            else "INACTIVE"
-        )
+        state = ("ACTIVE"
+                 if feature in self.configuration.active
+                 else "INACTIVE"
+                 )
 
         node = self.tree.insert(
             parent_id or "",
             tk.END,
             text=feature,
-            values=(
-                relation,
-                state
-            ),
-            open=True
-        )
+            values=(relation, state),
+            open=True)
 
-        # ----------------------------------------------------
         # Mandatory
-        # ----------------------------------------------------
 
-        for child in self.fm_children(
-            "mandatory",
-            feature
-        ):
+        for child in self.fm_children("mandatory", feature):
 
-            self.insert_relation(
-                node,
-                child,
-                "mandatory"
-            )
+            self.insert_relation(node, child, "mandatory")
 
-        # ----------------------------------------------------
         # Optional
-        # ----------------------------------------------------
-
+     
         for child in self.fm_children(
             "optional",
             feature
@@ -709,27 +657,13 @@ class MARJADAGUI:
         # OR
         # ----------------------------------------------------
 
-        for child in self.fm_children(
-            "or",
-            feature
-        ):
+        for child in self.fm_children("or", feature):
 
-            self.insert_relation(
-                node,
-                child,
-                "OR"
-            )
+            self.insert_relation(node, child, "OR")
 
-    # ========================================================
     # INSERT RELATION
-    # ========================================================
-
-    def insert_relation(
-        self,
-        parent_node,
-        feature,
-        relation
-    ):
+  
+    def insert_relation(self, parent_node, feature, relation):
 
         state = (
             "ACTIVE"
@@ -748,51 +682,27 @@ class MARJADAGUI:
             open=True
         )
 
-        # ----------------------------------------------------
         # Recursive children
-        # ----------------------------------------------------
-
-        for (
-            relation_key,
-            relation_name
-        ) in [
-
-            (
-                "mandatory",
-                "mandatory"
-            ),
-
-            (
-                "optional",
-                "optional"
-            ),
-
-            (
-                "xor",
-                "XOR"
-            ),
-
-            (
-                "or",
-                "OR"
-            )
-
-        ]:
+      
+        for (relation_key, relation_name) in [
+            ("mandatory", "mandatory"),
+            ("optional", "optional"),
+            ("xor", "XOR"),
+            ("or", "OR")
+            ]:
 
             for child in self.fm_children(
                 relation_key,
                 feature
-            ):
+                ):
 
                 self.insert_relation(
                     node,
                     child,
                     relation_name
-                )
+                    )
 
-    # ========================================================
     # GET CHILDREN
-    # ========================================================
 
     def fm_children(
         self,
@@ -837,10 +747,8 @@ class MARJADAGUI:
                                  (feature,dependent_features))
 
 
-        # ====================================================
         # REMOVE
-        # ====================================================
-
+     
         else:
 
             success, messages = (
