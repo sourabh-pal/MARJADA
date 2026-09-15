@@ -197,14 +197,7 @@ class AdaptationEngine:
                 messages
             )
 
-        # ----------------------------------------------------
-        # No invocation validation for removal
-        # ----------------------------------------------------
-
-        messages.append(
-            "INFO: Invocation-path validation is "
-            "not required for feature removal."
-        )
+       
 
         # ----------------------------------------------------
         # Accept configuration
