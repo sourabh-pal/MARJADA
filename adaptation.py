@@ -527,23 +527,15 @@ class AdaptationEngine:
                         count = count + 1
 
                 if count != 1:
-                    print(type(active))
-                    print(type(feature))
-                    print(type(child_list))
                     
                     if feature in child_list:
-                        print(type(active))
-                        print(type(feature))
-                        print(type(child_list))
                     
                         active = active - child_list
+                        
                         active.add(feature)
-                        
-                        
                         
                     else:
                         
-
                         messages.append(
                             f"FAIL: XOR violation at {parent}. "
                             f"Exactly one of "
