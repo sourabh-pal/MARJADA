@@ -43,10 +43,8 @@ class MARJADAGUI:
 
         self.refresh_all()
 
-    # ========================================================
     # STYLES
-    # ========================================================
-
+    
     def create_styles(self):
 
         style = ttk.Style()
