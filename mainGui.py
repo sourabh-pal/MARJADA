@@ -4,9 +4,7 @@ from data import barebone_features
 
 
 
-# ============================================================
-# 7. GUI
-# ============================================================
+# GUI
 
 class MARJADAGUI:
 
@@ -85,6 +83,8 @@ class MARJADAGUI:
     # REFRESH DEPENDENT FEATURES
 
     def refresh_dependent_features(self):
+        
+        operation = (self.operation.get())
 
         self.dependent_list.delete(0,tk.END)
 
@@ -96,9 +96,13 @@ class MARJADAGUI:
         # Current active configuration
         #active = (self.configuration.active)
         inactive = (self.configuration.inactive)
+        active = (self.configuration.active)
 
         # Reconstruction
-        dependent = (self.engine.reconstruct_addition(feature,inactive))
+        if operation == "ADD":
+            dependent = (self.engine.reconstruct_addition(feature,inactive))
+        elif operation == "REMOVE":
+            dependent = (self.engine.reconstruct_deletion(feature,active))
         
         # Sort the feature in the list according to its name
         for dep in sorted(dependent):
@@ -608,7 +612,8 @@ class MARJADAGUI:
         if operation == "ADD":
             self.refresh_dependent_features()
         else:
-            self.dependent_list.delete(0, tk.END)
+            self.refresh_dependent_features()
+            #self.dependent_list.delete(0, tk.END)
 
 
     # ========================================================

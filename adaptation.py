@@ -262,11 +262,19 @@ class AdaptationEngine:
     # by themselves. If any dependent feature already active, it will
     # not show in the dependent list.
 
-    def reconstruct_addition(self,feature,inactive):
+    def reconstruct_addition(self, feature, inactive):
         
-        ChooseDependentFeature = inactive - {feature}
+        ChooseDependentFeatureAdd = inactive - {feature}
         
-        return ChooseDependentFeature
+        return ChooseDependentFeatureAdd
+    
+    
+    
+    def reconstruct_deletion(self, feature, active):
+        
+        ChooseDependentFeatureDel = active - {feature}
+        
+        return ChooseDependentFeatureDel
        
 
         
