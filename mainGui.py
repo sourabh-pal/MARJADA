@@ -572,10 +572,8 @@ class MARJADAGUI:
         if operation == "ADD":
             values = sorted(self.configuration.inactive)
         else:
-            values = sorted(
-                self.configuration.active
-            )
-
+            values = sorted(self.configuration.active)
+        
         self.feature_combo["values"] = (values)
         
         self.feature_combo.set("Select Feature")

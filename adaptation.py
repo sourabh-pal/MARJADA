@@ -107,66 +107,48 @@ class AdaptationEngine:
         return (True, messages)
     
 
-    # ========================================================
     # FEATURE REMOVAL
-    # ========================================================
-
-    def remove_feature(
-        self,
-        feature
-    ):
+   
+    def remove_feature(self, feature):
 
         messages = []
 
-        # ----------------------------------------------------
         # Check existence
-        # ----------------------------------------------------
-
+     
         if feature not in self.fm.features:
 
-            return (
-                False,
-                [
+            return (False,
+                    [
                     "FAIL: Feature does not exist "
                     "in the feature model."
-                ]
-            )
+                    ]
+                    )
 
-        # ----------------------------------------------------
         # Check current state
-        # ----------------------------------------------------
-
+     
         if feature not in self.configuration.active:
 
-            return (
-                False,
-                [
+            return (False,
+                    [
                     "FAIL: Feature is not active."
-                ]
-            )
+                    ]
+                    )
 
-        # ----------------------------------------------------
         # Root cannot be removed
-        # ----------------------------------------------------
+       
+        if feature == root_feature:
 
-        if feature == "AdaptableTeaStore":
+            return (False,
+                    [
+                        "FAIL: Root feature AdaptableTeaStore "
+                        "cannot be removed."
+                    ]
+                    )
 
-            return (
-                False,
-                [
-                    "FAIL: Root feature AdaptableTeaStore "
-                    "cannot be removed."
-                ]
-            )
+        old_active = set(self.configuration.active)
 
-        old_active = set(
-            self.configuration.active
-        )
-
-        # ----------------------------------------------------
         # Reconstruction
-        # ----------------------------------------------------
-
+      
         dependent_features = (
             self.reconstruct_removal(
                 feature,
