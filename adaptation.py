@@ -58,8 +58,8 @@ class AdaptationEngine:
         
         # STRUCTURAL VALIDATION
 
-        structural_ok, structural_messages = (
-            self.validate_structural(new_active))
+        (structural_ok, structural_messages), new_active = (
+            self.validate_structural(feature, new_active))
 
         messages.extend(structural_messages)
 
@@ -455,7 +455,7 @@ class AdaptationEngine:
 
     # STRUCTURAL VALIDATION
 
-    def validate_structural(self, active):
+    def validate_structural(self, feature, active):
 
         messages = []
 
@@ -514,20 +514,43 @@ class AdaptationEngine:
             # if parent is active then exactly one child must be active
             if parent in active:
                 
+                child_list = set()
+                
                 count = 0
+                
                 for child in children:
+                    
                     if child in active:
+                        
+                        child_list.add(child)
+                        
                         count = count + 1
 
                 if count != 1:
+                    print(type(active))
+                    print(type(feature))
+                    print(type(child_list))
+                    
+                    if feature in child_list:
+                        print(type(active))
+                        print(type(feature))
+                        print(type(child_list))
+                    
+                        active = active - child_list
+                        active.add(feature)
+                        
+                        
+                        
+                    else:
+                        
 
-                    messages.append(
-                        f"FAIL: XOR violation at {parent}. "
-                        f"Exactly one of "
-                        f"{children} must be active."
-                    )
+                        messages.append(
+                            f"FAIL: XOR violation at {parent}. "
+                            f"Exactly one of "
+                            f"{children} must be active."
+                            )
 
-                    return (False,messages)
+                        return (False,messages)
             
             # if exactly one children is active then 
             # parent must be active
@@ -603,7 +626,7 @@ class AdaptationEngine:
                     
         messages.append("PASS: Structural validation.")
 
-        return (True, messages)            
+        return (True, messages), active            
                  
        
 
@@ -657,8 +680,6 @@ class AdaptationEngine:
     def build_graph(self, active):
 
         graph = {feature: [] for feature in active}
-        
-        print(graph)
 
         # Structural relations
         
@@ -691,8 +712,6 @@ class AdaptationEngine:
 
                     graph[source].append((target, "requires"))
                     
-        
-        #print(graph)
 
         return graph
 
