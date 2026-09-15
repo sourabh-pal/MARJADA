@@ -750,10 +750,9 @@ class MARJADAGUI:
         else:
 
             success, messages = (
-                self.engine.remove_feature(
-                    feature
+                self.engine.remove_feature(feature, 
+                                           dependent_features)
                 )
-            )
 
         # ====================================================
         # SHOW RESULT

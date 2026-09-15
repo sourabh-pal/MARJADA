@@ -109,7 +109,8 @@ class AdaptationEngine:
 
     # FEATURE REMOVAL
    
-    def remove_feature(self, feature):
+    def remove_feature(self, feature, 
+                       selected_dependent_features=None):
 
         messages = []
 
@@ -149,41 +150,27 @@ class AdaptationEngine:
 
         # Reconstruction
       
-        dependent_features = (
-            self.reconstruct_removal(
-                feature,
-                old_active
-            )
-        )
+        #dependent_features = (self.reconstruct_removal(feature, old_active))
+        
+        dependent_features = (selected_dependent_features)
 
-        # ----------------------------------------------------
+        
         # New configuration
-        # ----------------------------------------------------
+        
+        new_active = (old_active - dependent_features - {feature})
 
-        new_active = (
-            old_active
-            - dependent_features
-            - {feature}
-        )
-
-        messages.append(
-            f"Requested removal: {feature}"
-        )
+        messages.append(f"Requested removal: {feature}")
 
         if dependent_features:
 
             messages.append(
                 "Dependent features removed: "
-                + ", ".join(
-                    sorted(dependent_features)
+                + ", ".join(sorted(dependent_features))
                 )
-            )
 
         else:
 
-            messages.append(
-                "Dependent features removed: None"
-            )
+            messages.append("Dependent features removed: None")
 
         # STRUCTURAL VALIDATION
 
