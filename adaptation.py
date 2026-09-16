@@ -775,9 +775,9 @@ class AdaptationEngine:
         
         target_set = set(FeatureListInInvocationPath)
         
-        print(target)
-        print(complete_graph)
-        print(invocation_features)
+        #print(target)
+        #print(complete_graph)
+        #print(invocation_features)
         
         for item in target_set:
         
