@@ -81,15 +81,16 @@ class AdaptationEngine:
 
         # INVOCATION PATH VALIDATION
 
-        path = self.find_invocation_path(new_active,
+        (path, missing_feature) = self.find_invocation_path(new_active,
                                          feature)
-
+        
         if path is None:
 
             messages.append(
-                "FAIL: No invocation path exists "
-                "from an active invocation feature "
-                "to the added feature."
+                f"FAIL: No invocation path exists "
+                f"from an active invocation feature "
+                f"to the added feature. "
+                f"Missing features: {missing_feature}."
                 )
 
             return (False, messages)
@@ -723,11 +724,20 @@ class AdaptationEngine:
 
                     queue.append(next_feature)
 
+        
+        
+        
+        complete_graph = self.build_graph(self.fm.features)
+        invocation_path_feature_set = self.FindMissingFeature(
+            complete_graph, target)
+        invocation__feature_needed = invocation_path_feature_set - active
+        
+        
         # Target unreachable
 
         if target not in visited:
 
-            return None
+            return (None, invocation__feature_needed)
 
         # Reconstruct path
 
@@ -753,9 +763,45 @@ class AdaptationEngine:
 
         path.reverse()
 
-        return path
+        return (path, invocation__feature_needed)
 
 
+
+    def FindMissingFeature(self, complete_graph, target):
+        FeatureListInInvocationPath = set()
+        FeatureListInInvocationPath.add(target)
+
+        current = target
+
+        while current not in invocation_features:
+
+            parent_found = False
+
+            for node_tuple in complete_graph:
+
+                for child, _ in complete_graph[node_tuple]:
+
+                    if child == current:
+
+                        FeatureListInInvocationPath.add(node_tuple)
+                        current = node_tuple
+                        parent_found = True
+                        break
+
+                if parent_found:
+                    break
+
+            # No parent found → stop
+            if not parent_found:
+                break
+
+        return FeatureListInInvocationPath
+                    
+                
+                
+        
+        
+    
     # FORMAT PATH
 
     def format_path(self, path):
