@@ -58,7 +58,7 @@ class AdaptationEngine:
         
         # STRUCTURAL VALIDATION
 
-        (structural_ok, structural_messages), new_active = (
+        (structural_ok, structural_messages, new_active) = (
             self.validate_structural(feature, new_active))
 
         messages.extend(structural_messages)
@@ -436,7 +436,7 @@ class AdaptationEngine:
                 "FAIL: Root feature AdaptableTeaStore "
                 "must be active.")
 
-            return (False,messages)
+            return (False,messages, active)
         
         
 
@@ -458,7 +458,7 @@ class AdaptationEngine:
                             f"active configuration."
                         )
 
-                        return (False, messages)
+                        return (False, messages, active)
                     
             # 2. if child is active then parent must be active    
             for child in children:
@@ -473,7 +473,7 @@ class AdaptationEngine:
                             f"active configuration."
                             )
                         
-                        return(False, messages)
+                        return(False, messages, active)
                         
 
         
@@ -512,7 +512,7 @@ class AdaptationEngine:
                             f"{children} must be active."
                             )
 
-                        return (False,messages)
+                        return (False,messages, active)
             
             # if exactly one children is active then 
             # parent must be active
@@ -532,7 +532,7 @@ class AdaptationEngine:
                         f"The {parent} must be active. "
                         f"Exactly one {children} must be active. "
                         )
-                        return (False,messages)
+                        return (False,messages, active)
                 
                     
         # OR VALIDATION
@@ -550,7 +550,8 @@ class AdaptationEngine:
                         f"At least one child must be active."
                         )
 
-                    return (False, messages)
+                    return (False, messages, active)
+                
             elif parent not in active:
                 
                 count = sum(child in active for child in children)
@@ -583,12 +584,12 @@ class AdaptationEngine:
                     f"FAIL: The Functional Path {ParentPath} is "
                     f"inconsistent with to activate the feature."
                     )
-                return (False, messages)
+                return (False, messages, active)
                                      
                     
         messages.append("PASS: Structural validation.")
 
-        return (True, messages), active            
+        return (True, messages, active)            
                  
        
 
