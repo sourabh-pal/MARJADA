@@ -82,7 +82,7 @@ class AdaptationEngine:
         # INVOCATION PATH VALIDATION
 
         (path, missing_feature) = self.find_invocation_path(new_active,
-                                         feature)
+                                         feature, dependent_features)
         
         if path is None:
 
@@ -685,7 +685,7 @@ class AdaptationEngine:
     
     # FIND INVOCATION PATH
 
-    def find_invocation_path(self, active, target):
+    def find_invocation_path(self, active, target, dependent_features):
 
         graph = self.build_graph(active)
 
@@ -729,7 +729,7 @@ class AdaptationEngine:
         
         complete_graph = self.build_graph(self.fm.features)
         invocation_path_feature_set = self.FindMissingFeature(
-            complete_graph, target)
+            complete_graph, target, dependent_features)
         invocation__feature_needed = invocation_path_feature_set - active
         
         
@@ -767,33 +767,43 @@ class AdaptationEngine:
 
 
 
-    def FindMissingFeature(self, complete_graph, target):
+    def FindMissingFeature(self, complete_graph, target, 
+                           dependent_features):
         FeatureListInInvocationPath = set()
         FeatureListInInvocationPath.add(target)
+        FeatureListInInvocationPath.update(dependent_features)
+        
+        target_set = set(FeatureListInInvocationPath)
+        
+        print(target)
+        print(complete_graph)
+        print(invocation_features)
+        
+        for item in target_set:
+        
+            current = item
 
-        current = target
+            while current not in invocation_features:
 
-        while current not in invocation_features:
+                parent_found = False
 
-            parent_found = False
+                for node_tuple in complete_graph:
 
-            for node_tuple in complete_graph:
+                    for child, _ in complete_graph[node_tuple]:
 
-                for child, _ in complete_graph[node_tuple]:
+                        if child == current:
 
-                    if child == current:
+                            FeatureListInInvocationPath.add(node_tuple)
+                            current = node_tuple
+                            parent_found = True
+                            break
 
-                        FeatureListInInvocationPath.add(node_tuple)
-                        current = node_tuple
-                        parent_found = True
+                    if parent_found:
                         break
 
-                if parent_found:
+                # No parent found → stop
+                if not parent_found:
                     break
-
-            # No parent found → stop
-            if not parent_found:
-                break
 
         return FeatureListInInvocationPath
                     
