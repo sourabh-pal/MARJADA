@@ -7,4 +7,4 @@ Every changes in the configuration runtime, this tool will verify whether the
 changes comes within the scope of the new configuration.
 
 #Install Python 3 
-# run main file: Python3 main.py
+#run main file: Python3 main.py
