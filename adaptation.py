@@ -1088,7 +1088,7 @@ class AdaptationEngine:
 
 
     # ============================================================
-    # 7. ANALYSE REMOVAL
+    # ANALYSE REMOVAL
     #
     # After removing a feature:
     #
@@ -1119,7 +1119,7 @@ class AdaptationEngine:
         # Remaining active features that cannot be reached
     
 
-        dependent_to_remove = active - reachable
+        dependent_to_remove = active - reachable - {root_feature}
 
         return dependent_to_remove
 
