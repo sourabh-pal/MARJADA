@@ -197,25 +197,23 @@ class AdaptationEngine:
         
         # INVOCATION PATH VALIDATION
         
-        x = self.find_invocation_path_remove(new_active)
-
-        (path, missing_feature) = self.find_invocation_path(new_active,
-                                         feature, dependent_features)
+        dependent_feature_to_remove = self.analyse_removal(
+            new_active,invocation_features)
         
-        if path is None:
-
+        if dependent_feature_to_remove:
+            
             messages.append(
                 f"FAIL: No invocation path exists "
                 f"from an active invocation feature "
-                f"to the added feature. "
-                f"Missing features: {missing_feature}."
+                f"to these feature. "
+                f"These features should choose "
+                f"as dependent feature: {dependent_feature_to_remove}."
                 )
-
+            
             return (False, messages)
-
+        
         messages.append("PASS: Invocation-path validation.")
 
-        
          
         # ----------------------------------------------------
         # Accept configuration
@@ -733,11 +731,7 @@ class AdaptationEngine:
     
 
     
-    def find_invocation_path_remove(self, active):
-        
-        
-        
-        return None
+
     
     
     # FIND INVOCATION PATH
@@ -891,30 +885,16 @@ class AdaptationEngine:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     # ============================================================
-    # 3. FIND ALL REACHABLE FEATURES
-    #
-    # Starts from ALL invocation features.
+    # FIND ALL REACHABLE FEATURES
+    # Find all reachable features in the active configuration
+    #   from the invocation features
     # ============================================================
 
-    def get_reachable_features(
-        self,
-        active,
-        invocation_features
-    ):
+    def get_reachable_features(self,
+                               active,
+                               invocation_features
+                               ):
 
         active = set(active)
         invocation_features = set(invocation_features)
@@ -939,9 +919,7 @@ class AdaptationEngine:
             current = queue.popleft()
 
             for neighbour, relation_type in graph.get(
-                current,
-                []
-            ):
+                current, []):
 
                 if neighbour not in reachable:
 
@@ -1120,42 +1098,30 @@ class AdaptationEngine:
     #      dependent feature that should also be removed.
     # ============================================================
 
-    def analyse_removal(
-        self,
-        active,
-        feature_to_remove,
-        invocation_features
-    ):
+    def analyse_removal(self,
+                        active,
+                        invocation_features):
 
         active = set(active)
 
-        # --------------------------------------------------------
-        # Remove requested feature first
-        # --------------------------------------------------------
-
-        new_active = active - {feature_to_remove}
-
-        # --------------------------------------------------------
+ 
         # Find reachable features
-        # --------------------------------------------------------
+        # The feature that are reachable from the invocation feature
+        # The feature that has at least one invocation path
+ 
 
         reachable = self.get_reachable_features(
-            new_active,
+            active,
             invocation_features
-        )
+            )
 
-        # --------------------------------------------------------
+       
         # Remaining active features that cannot be reached
-        # --------------------------------------------------------
+    
 
-        dependent_to_remove = new_active - reachable
+        dependent_to_remove = active - reachable
 
-        return {
-            "removed_feature": feature_to_remove,
-            "remaining_active": new_active,
-            "reachable": reachable,
-            "dependent_to_remove": dependent_to_remove
-        }
+        return dependent_to_remove
 
 
     # ============================================================
