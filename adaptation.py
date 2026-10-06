@@ -117,24 +117,21 @@ class AdaptationEngine:
 
         # Check existence
      
-        if feature not in self.fm.features:
-
-            return (False,
-                    [
-                    "FAIL: Feature does not exist "
-                    "in the feature model."
-                    ]
-                    )
+        #if feature not in self.fm.features:  
+        #   return (False,
+        #          [
+        #             "FAIL: Feature does not exist "
+        #            "in the feature model."
+        #           ])
 
         # Check current state
      
-        if feature not in self.configuration.active:
+        #if feature not in self.configuration.active:
 
-            return (False,
-                    [
-                    "FAIL: Feature is not active."
-                    ]
-                    )
+        #   return (False,
+        #            [
+        #                "FAIL: Feature is not active."
+        #                ])
 
         # Root cannot be removed
        
@@ -144,8 +141,7 @@ class AdaptationEngine:
                     [
                         "FAIL: Root feature AdaptableTeaStore "
                         "cannot be removed."
-                    ]
-                    )
+                        ])
 
         old_active = set(self.configuration.active)
 
@@ -175,8 +171,8 @@ class AdaptationEngine:
 
         # STRUCTURAL VALIDATION
 
-        structural_ok, structural_messages = (
-            self.validate_structural(new_active))
+        (structural_ok, structural_messages, new_active) = (
+            self.validate_structural(feature, new_active))
 
         messages.extend(structural_messages)
 
@@ -193,20 +189,35 @@ class AdaptationEngine:
 
         if not cross_tree_ok:
 
-            return (
-                False,
-                messages
-            )
+            return (False, messages)
 
-       
 
+        
+        # INVOCATION PATH VALIDATION
+
+        (path, missing_feature) = self.find_invocation_path(new_active,
+                                         feature, dependent_features)
+        
+        if path is None:
+
+            messages.append(
+                f"FAIL: No invocation path exists "
+                f"from an active invocation feature "
+                f"to the added feature. "
+                f"Missing features: {missing_feature}."
+                )
+
+            return (False, messages)
+
+        messages.append("PASS: Invocation-path validation.")
+
+        
+         
         # ----------------------------------------------------
         # Accept configuration
         # ----------------------------------------------------
 
-        self.configuration.update(
-            new_active
-        )
+        self.configuration.update(new_active)
 
         messages.append(
             f"VALID: {feature} was removed successfully."

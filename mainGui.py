@@ -8,17 +8,10 @@ from data import barebone_features
 
 class MARJADAGUI:
 
-    def __init__(
-        self,
-        root,
-        fm,
-        configuration,
-        engine
-    ):
+    def __init__(self, root, fm, configuration, engine):
 
         self.root = root
 
-        # IMPORTANT:
         # All GUI operations use these same objects.
         self.fm = fm
         self.configuration = configuration
@@ -26,11 +19,11 @@ class MARJADAGUI:
 
         self.root.title(
             "MARJADA - Feature Adaptation and Reconstruction"
-        )
+            )
 
         self.root.geometry(
             "1400x800"
-        )
+            )
 
         self.root.minsize(
             1100,
@@ -747,12 +740,17 @@ class MARJADAGUI:
 
         # REMOVE
      
-        else:
+        elif operation == "REMOVE":
+            
+            # Get selected dependent features
+            selected_indices = (self.dependent_list.curselection())
 
-            success, messages = (
-                self.engine.remove_feature(feature, 
-                                           dependent_features)
-                )
+            dependent_features = {self.dependent_list.get(i) 
+                                  for i in selected_indices}
+
+            success, messages = (self.engine.remove_feature(
+                feature, dependent_features))
+
 
         # ====================================================
         # SHOW RESULT

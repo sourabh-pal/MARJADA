@@ -22,11 +22,6 @@ if __name__ == "__main__":
     engine = AdaptationEngine(fm,configuration)
 
 
-    app = MARJADAGUI(
-        root,
-        fm,
-        configuration,
-        engine
-    )
+    app = MARJADAGUI(root, fm, configuration, engine)
 
     root.mainloop()
