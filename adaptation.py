@@ -1,8 +1,10 @@
 
 # ADAPTATION ENGINE
 
-from collections import deque
+from collections import defaultdict, deque
 from data import root_feature, invocation_features
+
+
 #from numpy.distutils.conv_template import paren_repl
 
 class AdaptationEngine:
@@ -194,6 +196,8 @@ class AdaptationEngine:
 
         
         # INVOCATION PATH VALIDATION
+        
+        x = self.find_invocation_path_remove(new_active)
 
         (path, missing_feature) = self.find_invocation_path(new_active,
                                          feature, dependent_features)
@@ -650,19 +654,22 @@ class AdaptationEngine:
         return (True, messages)
 
 
-    # BUILD ACTIVE GRAPH
+
+    # BUILD GRAPH USING ONLY ACTIVE FEATURES
 
     def build_graph(self, active):
+
+        active = set(active)
 
         graph = {feature: [] for feature in active}
 
         # Structural relations
-        
+
         for relation_type in ["mandatory", "optional", "xor", "or"]:
 
-            relations = (self.fm.structural[relation_type])
+            relations = self.fm.structural[relation_type]
 
-            for (parent, children) in relations.items():
+            for parent, children in relations.items():
 
                 if parent not in active:
                     continue
@@ -670,13 +677,11 @@ class AdaptationEngine:
                 for child in children:
 
                     if child in active:
-
                         graph[parent].append((child, relation_type))
-                        
 
         # Requires relations
 
-        for (source, targets) in self.fm.cross_tree["requires"].items():
+        for source, targets in self.fm.cross_tree["requires"].items():
 
             if source not in active:
                 continue
@@ -684,14 +689,55 @@ class AdaptationEngine:
             for target in targets:
 
                 if target in active:
-
                     graph[source].append((target, "requires"))
-                    
 
         return graph
 
     
+    
+    # BUILD FULL GRAPH
+    #
+    # This graph contains ACTIVE + INACTIVE features.
+    #
+    # We need this graph to discover missing features.
+    # 
 
+    def build_full_graph(self):
+
+        graph = defaultdict(list)
+
+        # Structural relations
+
+
+        for relation_type in ["mandatory", "optional", "xor", "or"]:
+
+            relations = self.fm.structural[relation_type]
+
+            for parent, children in relations.items():
+
+                for child in children:
+
+                    graph[parent].append((child, relation_type))
+
+        # Requires relations
+
+        for source, targets in self.fm.cross_tree["requires"].items():
+
+            for target in targets:
+
+                graph[source].append(
+                    (target, "requires")
+                )
+
+        return dict(graph)
+    
+
+    
+    def find_invocation_path_remove(self, active):
+        
+        
+        
+        return None
     
     
     # FIND INVOCATION PATH
@@ -842,3 +888,384 @@ class AdaptationEngine:
             result += (f" --{relation}--> "f"{feature}")
 
         return result
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # ============================================================
+    # 3. FIND ALL REACHABLE FEATURES
+    #
+    # Starts from ALL invocation features.
+    # ============================================================
+
+    def get_reachable_features(
+        self,
+        active,
+        invocation_features
+    ):
+
+        active = set(active)
+        invocation_features = set(invocation_features)
+
+        graph = self.build_graph(active)
+
+        reachable = set()
+
+        queue = deque()
+
+        # Start from every active invocation feature
+        for invocation_feature in invocation_features:
+
+            if invocation_feature in active:
+
+                reachable.add(invocation_feature)
+                queue.append(invocation_feature)
+
+        # BFS
+        while queue:
+
+            current = queue.popleft()
+
+            for neighbour, relation_type in graph.get(
+                current,
+                []
+            ):
+
+                if neighbour not in reachable:
+
+                    reachable.add(neighbour)
+                    queue.append(neighbour)
+
+        return reachable
+
+
+    # ============================================================
+    # 4. FIND ALL PATHS FROM INVOCATION FEATURES TO TARGET
+    #
+    # Uses FULL graph.
+    #
+    # This is important because inactive features may be
+    # intermediate nodes in the path.
+    # ============================================================
+
+    def find_paths_from_invocation(
+        self,
+        invocation_features,
+        target
+    ):
+
+        graph = self.build_full_graph()
+
+        paths = []
+
+        def dfs(
+            current,
+            path,
+            visited
+        ):
+
+            if current == target:
+
+                paths.append(path.copy())
+                return
+
+            for neighbour, relation_type in graph.get(
+                current,
+                []
+            ):
+
+                if neighbour in visited:
+                    continue
+
+                visited.add(neighbour)
+
+                path.append(neighbour)
+
+                dfs(
+                    neighbour,
+                    path,
+                    visited
+                )
+
+                path.pop()
+                visited.remove(neighbour)
+
+        for invocation_feature in invocation_features:
+
+            dfs(
+                invocation_feature,
+                [invocation_feature],
+                {invocation_feature}
+            )
+
+        return paths
+
+
+    # ============================================================
+    # 5. FIND MISSING FEATURES
+    #
+    # For every unreachable feature:
+    #
+    #   find candidate invocation paths
+    #   calculate inactive features on each path
+    # ============================================================
+
+    def find_missing_features(
+        self,
+        active,
+        invocation_features,
+        unreachable
+    ):
+
+        active = set(active)
+
+        missing_information = {}
+
+        for feature in unreachable:
+
+            paths = self.find_paths_from_invocation(
+                invocation_features,
+                feature
+            )
+
+            candidate_paths = []
+
+            for path in paths:
+
+                path_features = set(path)
+
+                missing = path_features - active
+
+                candidate_paths.append({
+                    "path": path,
+                    "missing": missing
+                })
+
+            missing_information[feature] = candidate_paths
+
+        return missing_information
+
+
+    # ============================================================
+    # 6. ANALYSE ADDITION
+    #
+    # After adding a feature:
+    #
+    #   1. Check ALL active features.
+    #   2. Find reachable features.
+    #   3. Find unreachable features.
+    #   4. For unreachable features find missing features.
+    # ============================================================
+
+    def analyse_addition(
+        self,
+        active,
+        invocation_features
+    ):
+
+        active = set(active)
+
+        # --------------------------------------------------------
+        # Step 1: Find reachable active features
+        # --------------------------------------------------------
+
+        reachable = self.get_reachable_features(
+            active,
+            invocation_features
+        )
+
+        # --------------------------------------------------------
+        # Step 2: Find active features that are unreachable
+        # --------------------------------------------------------
+
+        unreachable = active - reachable
+
+        # --------------------------------------------------------
+        # Step 3: Find missing features for unreachable features
+        # --------------------------------------------------------
+
+        missing_features = self.find_missing_features(
+            active,
+            invocation_features,
+            unreachable
+        )
+
+        return {
+            "reachable": reachable,
+            "unreachable": unreachable,
+            "missing_features": missing_features
+        }
+
+
+    # ============================================================
+    # 7. ANALYSE REMOVAL
+    #
+    # After removing a feature:
+    #
+    #   1. Check ALL remaining active features.
+    #   2. Find reachable features.
+    #   3. Anything active but unreachable becomes a
+    #      dependent feature that should also be removed.
+    # ============================================================
+
+    def analyse_removal(
+        self,
+        active,
+        feature_to_remove,
+        invocation_features
+    ):
+
+        active = set(active)
+
+        # --------------------------------------------------------
+        # Remove requested feature first
+        # --------------------------------------------------------
+
+        new_active = active - {feature_to_remove}
+
+        # --------------------------------------------------------
+        # Find reachable features
+        # --------------------------------------------------------
+
+        reachable = self.get_reachable_features(
+            new_active,
+            invocation_features
+        )
+
+        # --------------------------------------------------------
+        # Remaining active features that cannot be reached
+        # --------------------------------------------------------
+
+        dependent_to_remove = new_active - reachable
+
+        return {
+            "removed_feature": feature_to_remove,
+            "remaining_active": new_active,
+            "reachable": reachable,
+            "dependent_to_remove": dependent_to_remove
+        }
+
+
+    # ============================================================
+    # 8. PRINT ADDITION RESULT
+    # ============================================================
+
+    def print_addition_result(
+        self,
+        result
+    ):
+
+        print("\n========== ADDITION ANALYSIS ==========")
+
+        print("\nReachable features:")
+
+        for feature in sorted(
+            result["reachable"]
+        ):
+
+            print("  +", feature)
+
+        print("\nUnreachable features:")
+
+        for feature in sorted(
+            result["unreachable"]
+        ):
+
+            print("  -", feature)
+
+        print("\nMissing features:")
+
+        for feature, paths in result[
+            "missing_features"
+        ].items():
+
+            print(
+                f"\nFeature: {feature}"
+            )
+
+            if not paths:
+
+                print(
+                    "  No path exists from "
+                    "any invocation feature."
+                )
+
+                continue
+
+            for item in paths:
+
+                path = item["path"]
+                missing = item["missing"]
+
+                print(
+                    "  Path:",
+                    " -> ".join(path)
+                )
+
+                if missing:
+
+                    print(
+                        "  Missing:",
+                        ", ".join(
+                            sorted(missing)
+                        )
+                    )
+
+                else:
+
+                    print(
+                        "  Path is active."
+                    )
+
+
+    # ============================================================
+    # 9. PRINT REMOVAL RESULT
+    # ============================================================
+
+    def print_removal_result(
+        self,
+        result
+    ):
+
+        print("\n========== REMOVAL ANALYSIS ==========")
+
+        print(
+            "\nRequested feature to remove:",
+            result["removed_feature"]
+        )
+
+        print("\nRemaining active features:")
+
+        for feature in sorted(
+            result["remaining_active"]
+        ):
+
+            print("  ", feature)
+
+        print("\nReachable features:")
+
+        for feature in sorted(
+            result["reachable"]
+        ):
+
+            print("  +", feature)
+
+        print("\nDependent features to remove:")
+
+        for feature in sorted(
+            result["dependent_to_remove"]
+        ):
+
+            print("  -", feature)
