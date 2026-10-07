@@ -14,30 +14,6 @@ Runtime adaptation can change the configuration of a system by activating or dea
 
 MARJADA addresses this problem by verifying the resulting configuration after each runtime adaptation.
 
-The general workflow is:
-
-```text
-Runtime Adaptation
-       |
-       v
-Configuration Reconstruction
-       |
-       v
-Realisability Verification
-       |
-       v
-+-----------------------+
-| Valid Configuration?  |
-+-----------------------+
-       |
-   +---+---+
-   |       |
-  Yes      No
-   |       |
-   v       v
- Apply   Reject
-Change   Change
-```
 
 ## Main Features
 
@@ -46,30 +22,9 @@ MARJADA currently supports:
 * Runtime activation of features.
 * Runtime deactivation of features.
 * Reconstruction of the configuration after an adaptation.
-* Verification of feature dependencies.
-* Verification of functional paths.
-* Verification of invocation paths.
-* Identification of dependent features affected by an adaptation.
-* Verification of the realisability of the resulting configuration.
+* Verification of feature Runtime adaptation.
+* Verification of Realisability of the valid configuration.
 
-## Realisability
-
-An adapted configuration is considered realisable only if it satisfies the required realisability conditions.
-
-Conceptually:
-
-$$
-Realisable(S) =
-Structural(S)
-\land
-Dependency(S)
-\land
-FunctionalPath(S)
-\land
-InvocationPath(S)
-$$
-
-The exact conditions and formal definitions are described in the accompanying research paper.
 
 ## Runtime Adaptation
 
@@ -121,19 +76,7 @@ MARJADA is developed as part of research on:
 * Formal verification.
 * Distributed and microservice-based systems.
 * Configuration realisability.
-* Dependency and path analysis.
 
-## Citation
-
-If you use MARJADA in your research, please cite the corresponding research paper:
-
-```bibtex
-@article{marjada,
-  title     = {MARJADA: Model-based Adaptive Reconstruction for Just-In-Time Activation and Deactivation},
-  author    = {Sourabh Pal},
-  year      = {2026}
-}
-```
 
 ## License
 
