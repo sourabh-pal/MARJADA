@@ -836,45 +836,42 @@ class AdaptationEngine:
 
 
 
-    def FindMissingFeature(self, complete_graph, target, 
-                           dependent_features):
-        FeatureListInInvocationPath = set()
-        FeatureListInInvocationPath.add(target)
-        FeatureListInInvocationPath.update(dependent_features)
-        
-        target_set = set(FeatureListInInvocationPath)
-        
-        #print(target)
-        #print(complete_graph)
-        #print(invocation_features)
-        
-        for item in target_set:
-        
-            current = item
-
-            while current not in invocation_features:
-
-                parent_found = False
-
-                for node_tuple in complete_graph:
-
-                    for child, _ in complete_graph[node_tuple]:
-
-                        if child == current:
-
-                            FeatureListInInvocationPath.add(node_tuple)
-                            current = node_tuple
-                            parent_found = True
-                            break
-
-                    if parent_found:
-                        break
-
-                # No parent found → stop
-                if not parent_found:
-                    break
-
-        return FeatureListInInvocationPath
+#    def FindMissingFeature(self, complete_graph, target, 
+#                           dependent_features):
+#        FeatureListInInvocationPath = set()
+#        FeatureListInInvocationPath.add(target)
+#        FeatureListInInvocationPath.update(dependent_features)
+#        
+#        target_set = set(FeatureListInInvocationPath)
+#        
+#        
+#        for item in target_set:
+#        
+#            current = item
+#
+#            while current not in invocation_features:
+#
+#                parent_found = False
+#
+#                for node_tuple in complete_graph:
+#
+#                    for child, _ in complete_graph[node_tuple]:
+#
+#                        if child == current:
+#
+#                            FeatureListInInvocationPath.add(node_tuple)
+#                            current = node_tuple
+#                            parent_found = True
+#                            break
+#
+#                    if parent_found:
+#                        break
+#
+#                # No parent found → stop
+#                if not parent_found:
+#                    break
+#
+#        return FeatureListInInvocationPath
                     
                 
                 

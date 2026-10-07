@@ -975,9 +975,7 @@ class MARJADAGUI:
             "========================\n\n"
         )
 
-        for feature in sorted(
-            active
-        ):
+        for feature in sorted(active):
 
             # Invocation feature itself
             # is not shown as py path to itself.
@@ -985,12 +983,7 @@ class MARJADAGUI:
 
                 continue
 
-            path = (
-                self.engine.find_invocation_path(
-                    active,
-                    feature
-                )
-            )
+            path = (self.engine.find_invocation_path(active, feature))
 
             if path is None:
 
