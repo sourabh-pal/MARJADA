@@ -82,20 +82,38 @@ class AdaptationEngine:
 
 
         # INVOCATION PATH VALIDATION
-
-        (path, missing_feature) = self.find_invocation_path(new_active,
-                                         feature, dependent_features)
         
-        if path is None:
-
+        
+        (invocation_path_ok, dependent_feature_to_add) = self.analyse_addition(
+            new_active,invocation_features)
+        
+        if not invocation_path_ok:
+            
             messages.append(
                 f"FAIL: No invocation path exists "
                 f"from an active invocation feature "
-                f"to the added feature. "
-                f"Missing features: {missing_feature}."
+                f"to these feature. "
+                f"These features should choose "
+                f"as dependent feature: {dependent_feature_to_add}."
                 )
-
+            
             return (False, messages)
+        
+        
+
+        #(path, missing_feature) = self.find_invocation_path(new_active,
+        #                                 feature, dependent_features)
+        
+        #if path is None:
+
+        #    messages.append(
+        #        f"FAIL: No invocation path exists "
+        #        f"from an active invocation feature "
+        #        f"to the added feature. "
+        #        f"Missing features: {missing_feature}."
+        #        )
+
+        #    return (False, messages)
 
         messages.append("PASS: Invocation-path validation.")
 
@@ -930,7 +948,7 @@ class AdaptationEngine:
 
 
     # ============================================================
-    # 4. FIND ALL PATHS FROM INVOCATION FEATURES TO TARGET
+    # FIND ALL PATHS FROM INVOCATION FEATURES TO TARGET
     #
     # Uses FULL graph.
     #
@@ -938,31 +956,23 @@ class AdaptationEngine:
     # intermediate nodes in the path.
     # ============================================================
 
-    def find_paths_from_invocation(
-        self,
-        invocation_features,
-        target
-    ):
+    def find_paths_from_invocation(self,
+                                   invocation_features,
+                                   target
+                                   ):
 
         graph = self.build_full_graph()
 
         paths = []
 
-        def dfs(
-            current,
-            path,
-            visited
-        ):
+        def dfs(current, path, visited):
 
             if current == target:
 
                 paths.append(path.copy())
                 return
 
-            for neighbour, relation_type in graph.get(
-                current,
-                []
-            ):
+            for neighbour, relation_type in graph.get(current,[]):
 
                 if neighbour in visited:
                     continue
@@ -971,28 +981,23 @@ class AdaptationEngine:
 
                 path.append(neighbour)
 
-                dfs(
-                    neighbour,
-                    path,
-                    visited
-                )
+                dfs(neighbour,path,visited)
 
                 path.pop()
                 visited.remove(neighbour)
 
         for invocation_feature in invocation_features:
 
-            dfs(
-                invocation_feature,
+            dfs(invocation_feature,
                 [invocation_feature],
                 {invocation_feature}
-            )
+                )
 
         return paths
 
 
     # ============================================================
-    # 5. FIND MISSING FEATURES
+    # FIND MISSING FEATURES
     #
     # For every unreachable feature:
     #
@@ -1000,12 +1005,11 @@ class AdaptationEngine:
     #   calculate inactive features on each path
     # ============================================================
 
-    def find_missing_features(
-        self,
-        active,
-        invocation_features,
-        unreachable
-    ):
+    def find_missing_features(self,
+                              active,
+                              invocation_features,
+                              unreachable
+                              ):
 
         active = set(active)
 
@@ -1047,44 +1051,55 @@ class AdaptationEngine:
     #   4. For unreachable features find missing features.
     # ============================================================
 
-    def analyse_addition(
-        self,
-        active,
-        invocation_features
-    ):
+    def analyse_addition(self,
+                         active,
+                         invocation_features
+                         ):
 
         active = set(active)
 
-        # --------------------------------------------------------
-        # Step 1: Find reachable active features
-        # --------------------------------------------------------
+        # Find reachable active features
 
         reachable = self.get_reachable_features(
             active,
             invocation_features
-        )
+            )
 
-        # --------------------------------------------------------
-        # Step 2: Find active features that are unreachable
-        # --------------------------------------------------------
+        # Find active features that are unreachable
 
-        unreachable = active - reachable
+        unreachable = active - reachable - {root_feature}
+        
+        # Find missing features for unreachable features
+        if unreachable:
+            
+            missing_features = self.find_missing_features(
+                active,
+                invocation_features,
+                unreachable
+                )
+            
+            
+            
+            return (False, missing_features)
+        
+        return (True, unreachable)
+            
 
-        # --------------------------------------------------------
-        # Step 3: Find missing features for unreachable features
-        # --------------------------------------------------------
+        # Find missing features for unreachable features
+        
+        
+     
+        #missing_features = self.find_missing_features(
+        #    active,
+        #    invocation_features,
+        #    unreachable
+        #    )
 
-        missing_features = self.find_missing_features(
-            active,
-            invocation_features,
-            unreachable
-        )
-
-        return {
-            "reachable": reachable,
-            "unreachable": unreachable,
-            "missing_features": missing_features
-        }
+        #return {
+        #    "reachable": reachable,
+        #    "unreachable": unreachable,
+        #    "missing_features": missing_features
+        #}
 
 
     # ============================================================

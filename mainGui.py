@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from data import barebone_features
+from data import barebone_features, invocation_features
 
 
 
@@ -912,11 +912,11 @@ class MARJADAGUI:
             self.configuration.active
         )
 
-        invocation_features = (
-            self.engine.find_invocation_features(
-                active
-            )
-        )
+        #invocation_features = (
+        #    self.engine.find_invocation_features(
+        #        active
+        #    )
+        #)
 
         window = tk.Toplevel(
             self.root
