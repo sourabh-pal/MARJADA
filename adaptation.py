@@ -5,8 +5,6 @@ from collections import defaultdict, deque
 from data import root_feature, invocation_features
 
 
-#from numpy.distutils.conv_template import paren_repl
-
 class AdaptationEngine:
 
     def __init__(self, feature_model, configuration):
@@ -135,25 +133,6 @@ class AdaptationEngine:
 
         messages = []
 
-        # Check existence
-     
-        #if feature not in self.fm.features:  
-        #   return (False,
-        #          [
-        #             "FAIL: Feature does not exist "
-        #            "in the feature model."
-        #           ])
-
-        # Check current state
-     
-        #if feature not in self.configuration.active:
-
-        #   return (False,
-        #            [
-        #                "FAIL: Feature is not active."
-        #                ])
-
-        # Root cannot be removed
        
         if feature == root_feature:
 
@@ -836,43 +815,7 @@ class AdaptationEngine:
 
 
 
-#    def FindMissingFeature(self, complete_graph, target, 
-#                           dependent_features):
-#        FeatureListInInvocationPath = set()
-#        FeatureListInInvocationPath.add(target)
-#        FeatureListInInvocationPath.update(dependent_features)
-#        
-#        target_set = set(FeatureListInInvocationPath)
-#        
-#        
-#        for item in target_set:
-#        
-#            current = item
-#
-#            while current not in invocation_features:
-#
-#                parent_found = False
-#
-#                for node_tuple in complete_graph:
-#
-#                    for child, _ in complete_graph[node_tuple]:
-#
-#                        if child == current:
-#
-#                            FeatureListInInvocationPath.add(node_tuple)
-#                            current = node_tuple
-#                            parent_found = True
-#                            break
-#
-#                    if parent_found:
-#                        break
-#
-#                # No parent found → stop
-#                if not parent_found:
-#                    break
-#
-#        return FeatureListInInvocationPath
-                    
+
                 
                 
         
@@ -1082,21 +1025,7 @@ class AdaptationEngine:
         return (True, unreachable)
             
 
-        # Find missing features for unreachable features
-        
-        
-     
-        #missing_features = self.find_missing_features(
-        #    active,
-        #    invocation_features,
-        #    unreachable
-        #    )
-
-        #return {
-        #    "reachable": reachable,
-        #    "unreachable": unreachable,
-        #    "missing_features": missing_features
-        #}
+      
 
 
     # ============================================================
@@ -1135,115 +1064,3 @@ class AdaptationEngine:
 
         return dependent_to_remove
 
-
-    # ============================================================
-    # 8. PRINT ADDITION RESULT
-    # ============================================================
-
-    def print_addition_result(
-        self,
-        result
-    ):
-
-        print("\n========== ADDITION ANALYSIS ==========")
-
-        print("\nReachable features:")
-
-        for feature in sorted(
-            result["reachable"]
-        ):
-
-            print("  +", feature)
-
-        print("\nUnreachable features:")
-
-        for feature in sorted(
-            result["unreachable"]
-        ):
-
-            print("  -", feature)
-
-        print("\nMissing features:")
-
-        for feature, paths in result[
-            "missing_features"
-        ].items():
-
-            print(
-                f"\nFeature: {feature}"
-            )
-
-            if not paths:
-
-                print(
-                    "  No path exists from "
-                    "any invocation feature."
-                )
-
-                continue
-
-            for item in paths:
-
-                path = item["path"]
-                missing = item["missing"]
-
-                print(
-                    "  Path:",
-                    " -> ".join(path)
-                )
-
-                if missing:
-
-                    print(
-                        "  Missing:",
-                        ", ".join(
-                            sorted(missing)
-                        )
-                    )
-
-                else:
-
-                    print(
-                        "  Path is active."
-                    )
-
-
-    # ============================================================
-    # 9. PRINT REMOVAL RESULT
-    # ============================================================
-
-    def print_removal_result(
-        self,
-        result
-    ):
-
-        print("\n========== REMOVAL ANALYSIS ==========")
-
-        print(
-            "\nRequested feature to remove:",
-            result["removed_feature"]
-        )
-
-        print("\nRemaining active features:")
-
-        for feature in sorted(
-            result["remaining_active"]
-        ):
-
-            print("  ", feature)
-
-        print("\nReachable features:")
-
-        for feature in sorted(
-            result["reachable"]
-        ):
-
-            print("  +", feature)
-
-        print("\nDependent features to remove:")
-
-        for feature in sorted(
-            result["dependent_to_remove"]
-        ):
-
-            print("  -", feature)
