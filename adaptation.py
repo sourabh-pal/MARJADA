@@ -228,19 +228,19 @@ class AdaptationEngine:
     # by themselves. If any dependent feature already active, it will
     # not show in the dependent list.
 
-    def reconstruct_addition(self, feature, inactive):
-        
-        ChooseDependentFeatureAdd = inactive - {feature}
-        
-        return ChooseDependentFeatureAdd
+    # def reconstruct_addition(self, feature, inactive):
+    #
+    #     ChooseDependentFeatureAdd = inactive - {feature}
+    #
+    #     return ChooseDependentFeatureAdd
     
     
     
-    def reconstruct_deletion(self, feature, active):
-        
-        ChooseDependentFeatureDel = active - {feature}
-        
-        return ChooseDependentFeatureDel
+    # def reconstruct_deletion(self, feature, active):
+    #
+    #     ChooseDependentFeatureDel = active - {feature}
+    #
+    #     return ChooseDependentFeatureDel
        
 
         
@@ -341,53 +341,53 @@ class AdaptationEngine:
     # CHECK STRUCTURAL ANCESTOR
     # ========================================================
 
-    def has_structural_ancestor(
-        self,
-        child,
-        ancestor
-    ):
-
-        queue = deque(
-            [ancestor]
-        )
-
-        visited = set()
-
-        while queue:
-
-            current = queue.popleft()
-
-            if current in visited:
-                continue
-
-            visited.add(
-                current
-            )
-
-            for relation_type in [
-                "mandatory",
-                "optional",
-                "xor",
-                "or"
-            ]:
-
-                children = (
-                    self.fm.structural[
-                        relation_type
-                    ].get(
-                        current,
-                        []
-                    )
-                )
-
-                if child in children:
-                    return True
-
-                queue.extend(
-                    children
-                )
-
-        return False
+    # def has_structural_ancestor(
+    #     self,
+    #     child,
+    #     ancestor
+    # ):
+    #
+    #     queue = deque(
+    #         [ancestor]
+    #     )
+    #
+    #     visited = set()
+    #
+    #     while queue:
+    #
+    #         current = queue.popleft()
+    #
+    #         if current in visited:
+    #             continue
+    #
+    #         visited.add(
+    #             current
+    #         )
+    #
+    #         for relation_type in [
+    #             "mandatory",
+    #             "optional",
+    #             "xor",
+    #             "or"
+    #         ]:
+    #
+    #             children = (
+    #                 self.fm.structural[
+    #                     relation_type
+    #                 ].get(
+    #                     current,
+    #                     []
+    #                 )
+    #             )
+    #
+    #             if child in children:
+    #                 return True
+    #
+    #             queue.extend(
+    #                 children
+    #             )
+    #
+    #     return False
 
     
     
@@ -395,251 +395,251 @@ class AdaptationEngine:
     # is reachable from the root feature.
     # So, there should be direct and continuous path from
     # the root feature to the feature is going to be added.
-    def find_feature_path(self, feature):
-        
-        featuresInPath = set()
-        
-        flag_feature = feature
-        featuresInPath.add(feature)
-        
-        while flag_feature != self.root_feature:
-            
-            parent_found = False
-            
-            for relation_types in ["mandatory", "optional", 
-                                   "xor", "or"]:
-            
-                relations = (self.fm.structural[relation_types])
-            
-                for parent, children in relations.items():
-                
-                    for child in children:
-                    
-                        if child == flag_feature:
-                            featuresInPath.add(parent)
-                            flag_feature = parent
-                            parent_found = True
-                            break
-                
-                if parent_found:
-                    break
-        
-        return featuresInPath
+    # def find_feature_path(self, feature):
+    #
+    #     featuresInPath = set()
+    #
+    #     flag_feature = feature
+    #     featuresInPath.add(feature)
+    #
+    #     while flag_feature != self.root_feature:
+    #
+    #         parent_found = False
+    #
+    #         for relation_types in ["mandatory", "optional", 
+    #                                "xor", "or"]:
+    #
+    #             relations = (self.fm.structural[relation_types])
+    #
+    #             for parent, children in relations.items():
+    #
+    #                 for child in children:
+    #
+    #                     if child == flag_feature:
+    #                         featuresInPath.add(parent)
+    #                         flag_feature = parent
+    #                         parent_found = True
+    #                         break
+    #
+    #             if parent_found:
+    #                 break
+    #
+    #     return featuresInPath
 
 
     # STRUCTURAL VALIDATION
 
-    def validate_structural(self, feature, active):
-
-        messages = []
-
-        # Root validation
-
-        if self.root_feature not in active:
-            messages.append(
-                "FAIL: Root feature AdaptableTeaStore "
-                "must be active.")
-
-            return (False,messages, active)
-        
-        
-
-        # MANDATORY VALIDATION:
-        # Two types of mandatory validation
-        # 1. if parent is active the child must be active
-        for (parent,children) in self.fm.structural[
-            "mandatory"].items():
-
-            if parent in active:
-
-                for child in children:
-
-                    if child not in active:
-
-                        messages.append(
-                            f"FAIL: Mandatory feature "
-                            f"{child} is missing from "
-                            f"active configuration."
-                        )
-
-                        return (False, messages, active)
-                    
-            # 2. if child is active then parent must be active    
-            for child in children:
-                
-                if child in active:
-                    
-                    if parent not in active:
-                        
-                        messages.append(
-                            f"FAIL: Mandatory feature "
-                            f"{parent} is missing from "
-                            f"active configuration."
-                            )
-                        
-                        return(False, messages, active)
-                        
-
-        
-        # XOR VALIDATION
-        
-        for (parent,children) in self.fm.structural["xor"].items():
-
-            # if parent is active then exactly one child must be active
-            if parent in active:
-                
-                child_list = set()
-                
-                count = 0
-                
-                for child in children:
-                    
-                    if child in active:
-                        
-                        child_list.add(child)
-                        
-                        count = count + 1
-
-                if count != 1:
-                    
-                    if feature in child_list:
-                    
-                        active = active - child_list
-                        
-                        active.add(feature)
-                        
-                    else:
-                        
-                        messages.append(
-                            f"FAIL: XOR violation at {parent}. "
-                            f"Exactly one of "
-                            f"{children} must be active."
-                            )
-
-                        return (False,messages, active)
-            
-            # if exactly one children is active then 
-            # parent must be active
-            else:
-                count = 0
-                for child in children:
-                    if child in active:
-                        count = count + 1
-                
-                # if one or more children active but
-                # the parent is inactive
-                if count >= 1:
-                    if parent not in active:
-                        
-                        messages.append(
-                        f"FAIL: XOR violation at {children}. "
-                        f"The {parent} must be active. "
-                        f"Exactly one {children} must be active. "
-                        )
-                        return (False,messages, active)
-                
-                    
-        # OR VALIDATION
-    
-        for (parent, children) in self.fm.structural["or"].items():
-
-            if parent in active:
-                
-                count = sum(child in active for child in children)
-
-                if count < 1:
-
-                    messages.append(
-                        f"FAIL: OR violation at {parent}. "
-                        f"At least one child must be active."
-                        )
-
-                    return (False, messages, active)
-                
-            elif parent not in active:
-                
-                count = sum(child in active for child in children)
-                
-                if count > 0:
-                    
-                    messages.append(
-                        f"FAIL: OR violation at {children}. "
-                        f"The {parent} must be active."
-                        )
-        
-        
-       
-        # Check whether the Functional Path exist
-        # from the root feature to the activating feature.
-        # In case, there is inconsistent with the functional
-        # path, then the inactive feature in the path
-        # must be add as a dependent feature by the developer.
-        for feature in active:
-            
-            if feature == self.root_feature:
-                continue
-            
-            ParentPath = self.find_feature_path(feature)
-            ParentPath.add(feature)
-            
-            if not ParentPath.issubset(active):
-                
-                messages.append(
-                    f"FAIL: The Functional Path {ParentPath} is "
-                    f"inconsistent with to activate the feature."
-                    )
-                return (False, messages, active)
-                                     
-                    
-        messages.append("PASS: Structural validation.")
-
-        return (True, messages, active)            
+    # def validate_structural(self, feature, active):
+    #
+    #     messages = []
+    #
+    #     # Root validation
+    #
+    #     if self.root_feature not in active:
+    #         messages.append(
+    #             "FAIL: Root feature AdaptableTeaStore "
+    #             "must be active.")
+    #
+    #         return (False,messages, active)
+    #
+    #
+    #
+    #     # MANDATORY VALIDATION:
+    #     # Two types of mandatory validation
+    #     # 1. if parent is active the child must be active
+    #     for (parent,children) in self.fm.structural[
+    #         "mandatory"].items():
+    #
+    #         if parent in active:
+    #
+    #             for child in children:
+    #
+    #                 if child not in active:
+    #
+    #                     messages.append(
+    #                         f"FAIL: Mandatory feature "
+    #                         f"{child} is missing from "
+    #                         f"active configuration."
+    #                     )
+    #
+    #                     return (False, messages, active)
+    #
+    #         # 2. if child is active then parent must be active    
+    #         for child in children:
+    #
+    #             if child in active:
+    #
+    #                 if parent not in active:
+    #
+    #                     messages.append(
+    #                         f"FAIL: Mandatory feature "
+    #                         f"{parent} is missing from "
+    #                         f"active configuration."
+    #                         )
+    #
+    #                     return(False, messages, active)
+    #
+    #
+    #
+    #     # XOR VALIDATION
+    #
+    #     for (parent,children) in self.fm.structural["xor"].items():
+    #
+    #         # if parent is active then exactly one child must be active
+    #         if parent in active:
+    #
+    #             child_list = set()
+    #
+    #             count = 0
+    #
+    #             for child in children:
+    #
+    #                 if child in active:
+    #
+    #                     child_list.add(child)
+    #
+    #                     count = count + 1
+    #
+    #             if count != 1:
+    #
+    #                 if feature in child_list:
+    #
+    #                     active = active - child_list
+    #
+    #                     active.add(feature)
+    #
+    #                 else:
+    #
+    #                     messages.append(
+    #                         f"FAIL: XOR violation at {parent}. "
+    #                         f"Exactly one of "
+    #                         f"{children} must be active."
+    #                         )
+    #
+    #                     return (False,messages, active)
+    #
+    #         # if exactly one children is active then 
+    #         # parent must be active
+    #         else:
+    #             count = 0
+    #             for child in children:
+    #                 if child in active:
+    #                     count = count + 1
+    #
+    #             # if one or more children active but
+    #             # the parent is inactive
+    #             if count >= 1:
+    #                 if parent not in active:
+    #
+    #                     messages.append(
+    #                     f"FAIL: XOR violation at {children}. "
+    #                     f"The {parent} must be active. "
+    #                     f"Exactly one {children} must be active. "
+    #                     )
+    #                     return (False,messages, active)
+    #
+    #
+    #     # OR VALIDATION
+    #
+    #     for (parent, children) in self.fm.structural["or"].items():
+    #
+    #         if parent in active:
+    #
+    #             count = sum(child in active for child in children)
+    #
+    #             if count < 1:
+    #
+    #                 messages.append(
+    #                     f"FAIL: OR violation at {parent}. "
+    #                     f"At least one child must be active."
+    #                     )
+    #
+    #                 return (False, messages, active)
+    #
+    #         elif parent not in active:
+    #
+    #             count = sum(child in active for child in children)
+    #
+    #             if count > 0:
+    #
+    #                 messages.append(
+    #                     f"FAIL: OR violation at {children}. "
+    #                     f"The {parent} must be active."
+    #                     )
+    #
+    #
+    #
+    #     # Check whether the Functional Path exist
+    #     # from the root feature to the activating feature.
+    #     # In case, there is inconsistent with the functional
+    #     # path, then the inactive feature in the path
+    #     # must be add as a dependent feature by the developer.
+    #     for feature in active:
+    #
+    #         if feature == self.root_feature:
+    #             continue
+    #
+    #         ParentPath = self.find_feature_path(feature)
+    #         ParentPath.add(feature)
+    #
+    #         if not ParentPath.issubset(active):
+    #
+    #             messages.append(
+    #                 f"FAIL: The Functional Path {ParentPath} is "
+    #                 f"inconsistent with to activate the feature."
+    #                 )
+    #             return (False, messages, active)
+    #
+    #
+    #     messages.append("PASS: Structural validation.")
+    #
+    #     return (True, messages, active)            
                  
        
 
     # CROSS-TREE VALIDATION
 
-    def validate_cross_tree(self, active):
-
-        messages = []
-
-        for (source, targets) in self.fm.cross_tree["requires"
-                                                    ].items():
-
-            if source in active:
-
-                for target in targets:
-
-                    if target not in active:
-
-                        messages.append(
-                            f"FAIL: {source} requires "
-                            f"{target}."
-                            )
-
-                        return (False, messages)
-
-        
-        for (source, targets) in self.fm.cross_tree["excludes"
-                                                    ].items():
-
-            if source in active:
-
-                for target in targets:
-
-                    if target in active:
-
-                        messages.append(
-                            f"FAIL: {source} excludes "
-                            f"{target}."
-                            )
-
-                        return (False, messages)
-        
-        messages.append("PASS: Cross-tree validation.")
-
-
-        return (True, messages)
+    # def validate_cross_tree(self, active):
+    #
+    #     messages = []
+    #
+    #     for (source, targets) in self.fm.cross_tree["requires"
+    #                                                 ].items():
+    #
+    #         if source in active:
+    #
+    #             for target in targets:
+    #
+    #                 if target not in active:
+    #
+    #                     messages.append(
+    #                         f"FAIL: {source} requires "
+    #                         f"{target}."
+    #                         )
+    #
+    #                     return (False, messages)
+    #
+    #
+    #     for (source, targets) in self.fm.cross_tree["excludes"
+    #                                                 ].items():
+    #
+    #         if source in active:
+    #
+    #             for target in targets:
+    #
+    #                 if target in active:
+    #
+    #                     messages.append(
+    #                         f"FAIL: {source} excludes "
+    #                         f"{target}."
+    #                         )
+    #
+    #                     return (False, messages)
+    #
+    #     messages.append("PASS: Cross-tree validation.")
+    #
+    #
+    #     return (True, messages)
 
 
 
@@ -690,35 +690,36 @@ class AdaptationEngine:
     # We need this graph to discover missing features.
     # 
 
-    def build_full_graph(self):
+    # def build_full_graph(self):
+    #
+    #     graph = defaultdict(list)
+    #
+    #     # Structural relations
+    #
+    #
+    #     for relation_type in ["mandatory", "optional", "xor", "or"]:
+    #
+    #         relations = self.fm.structural[relation_type]
+    #
+    #         for parent, children in relations.items():
+    #
+    #             for child in children:
+    #
+    #                 graph[parent].append((child, relation_type))
+    #
+    #     # Requires relations
+    #
+    #     for source, targets in self.fm.cross_tree["requires"].items():
+    #
+    #         for target in targets:
+    #
+    #             graph[source].append(
+    #                 (target, "requires")
+    #             )
+    #
+    #     return dict(graph)
+    #
 
-        graph = defaultdict(list)
-
-        # Structural relations
-
-
-        for relation_type in ["mandatory", "optional", "xor", "or"]:
-
-            relations = self.fm.structural[relation_type]
-
-            for parent, children in relations.items():
-
-                for child in children:
-
-                    graph[parent].append((child, relation_type))
-
-        # Requires relations
-
-        for source, targets in self.fm.cross_tree["requires"].items():
-
-            for target in targets:
-
-                graph[source].append(
-                    (target, "requires")
-                )
-
-        return dict(graph)
-    
 
     
 
@@ -846,37 +847,37 @@ class AdaptationEngine:
                                active,
                                invocation_features
                                ):
-
+    
         active = set(active)
         invocation_features = set(invocation_features)
-
+    
         graph = self.build_graph(active)
-
+    
         reachable = set()
-
+    
         queue = deque()
-
+    
         # Start from every active invocation feature
         for invocation_feature in invocation_features:
-
+    
             if invocation_feature in active:
-
+    
                 reachable.add(invocation_feature)
                 queue.append(invocation_feature)
-
+    
         # BFS
         while queue:
-
+    
             current = queue.popleft()
-
+    
             for neighbour, relation_type in graph.get(
                 current, []):
-
+    
                 if neighbour not in reachable:
-
+    
                     reachable.add(neighbour)
                     queue.append(neighbour)
-
+    
         return reachable
 
 
@@ -889,44 +890,44 @@ class AdaptationEngine:
     # intermediate nodes in the path.
     # ============================================================
 
-    def find_paths_from_invocation(self,
-                                   invocation_features,
-                                   target
-                                   ):
-
-        graph = self.build_full_graph()
-
-        paths = []
-
-        def dfs(current, path, visited):
-
-            if current == target:
-
-                paths.append(path.copy())
-                return
-
-            for neighbour, relation_type in graph.get(current,[]):
-
-                if neighbour in visited:
-                    continue
-
-                visited.add(neighbour)
-
-                path.append(neighbour)
-
-                dfs(neighbour,path,visited)
-
-                path.pop()
-                visited.remove(neighbour)
-
-        for invocation_feature in invocation_features:
-
-            dfs(invocation_feature,
-                [invocation_feature],
-                {invocation_feature}
-                )
-
-        return paths
+    # def find_paths_from_invocation(self,
+    #                                invocation_features,
+    #                                target
+    #                                ):
+    #
+    #     graph = self.build_full_graph()
+    #
+    #     paths = []
+    #
+    #     def dfs(current, path, visited):
+    #
+    #         if current == target:
+    #
+    #             paths.append(path.copy())
+    #             return
+    #
+    #         for neighbour, relation_type in graph.get(current,[]):
+    #
+    #             if neighbour in visited:
+    #                 continue
+    #
+    #             visited.add(neighbour)
+    #
+    #             path.append(neighbour)
+    #
+    #             dfs(neighbour,path,visited)
+    #
+    #             path.pop()
+    #             visited.remove(neighbour)
+    #
+    #     for invocation_feature in invocation_features:
+    #
+    #         dfs(invocation_feature,
+    #             [invocation_feature],
+    #             {invocation_feature}
+    #             )
+    #
+    #     return paths
 
 
     # ============================================================
@@ -938,39 +939,39 @@ class AdaptationEngine:
     #   calculate inactive features on each path
     # ============================================================
 
-    def find_missing_features(self,
-                              active,
-                              invocation_features,
-                              unreachable
-                              ):
-
-        active = set(active)
-
-        missing_information = {}
-
-        for feature in unreachable:
-
-            paths = self.find_paths_from_invocation(
-                invocation_features,
-                feature
-            )
-
-            candidate_paths = []
-
-            for path in paths:
-
-                path_features = set(path)
-
-                missing = path_features - active
-
-                candidate_paths.append({
-                    "path": path,
-                    "missing": missing
-                })
-
-            missing_information[feature] = candidate_paths
-
-        return missing_information
+    # def find_missing_features(self,
+    #                           active,
+    #                           invocation_features,
+    #                           unreachable
+    #                           ):
+    #
+    #     active = set(active)
+    #
+    #     missing_information = {}
+    #
+    #     for feature in unreachable:
+    #
+    #         paths = self.find_paths_from_invocation(
+    #             invocation_features,
+    #             feature
+    #         )
+    #
+    #         candidate_paths = []
+    #
+    #         for path in paths:
+    #
+    #             path_features = set(path)
+    #
+    #             missing = path_features - active
+    #
+    #             candidate_paths.append({
+    #                 "path": path,
+    #                 "missing": missing
+    #             })
+    #
+    #         missing_information[feature] = candidate_paths
+    #
+    #     return missing_information
 
 
     # ============================================================
@@ -984,38 +985,38 @@ class AdaptationEngine:
     #   4. For unreachable features find missing features.
     # ============================================================
 
-    def analyse_addition(self,
-                         active,
-                         invocation_features
-                         ):
-
-        active = set(active)
-
-        # Find reachable active features
-
-        reachable = self.get_reachable_features(
-            active,
-            invocation_features
-            )
-
-        # Find active features that are unreachable
-
-        unreachable = active - reachable - {self.root_feature}
-        
-        # Find missing features for unreachable features
-        if unreachable:
-            
-            missing_features = self.find_missing_features(
-                active,
-                invocation_features,
-                unreachable
-                )
-            
-            
-            
-            return (False, missing_features)
-        
-        return (True, unreachable)
+    # def analyse_addition(self,
+    #                      active,
+    #                      invocation_features
+    #                      ):
+    #
+    #     active = set(active)
+    #
+    #     # Find reachable active features
+    #
+    #     reachable = self.get_reachable_features(
+    #         active,
+    #         invocation_features
+    #         )
+    #
+    #     # Find active features that are unreachable
+    #
+    #     unreachable = active - reachable - {self.root_feature}
+    #
+    #     # Find missing features for unreachable features
+    #     if unreachable:
+    #
+    #         missing_features = self.find_missing_features(
+    #             active,
+    #             invocation_features,
+    #             unreachable
+    #             )
+    #
+    #
+    #
+    #         return (False, missing_features)
+    #
+    #     return (True, unreachable)
             
 
       
@@ -1032,30 +1033,30 @@ class AdaptationEngine:
     #      dependent feature that should also be removed.
     # ============================================================
 
-    def analyse_removal(self,
-                        active,
-                        invocation_features):
-
-        active = set(active)
-
- 
-        # Find reachable features
-        # The feature that are reachable from the invocation feature
-        # The feature that has at least one invocation path
- 
-
-        reachable = self.get_reachable_features(
-            active,
-            invocation_features
-            )
-
-       
-        # Remaining active features that cannot be reached
-    
-
-        dependent_to_remove = active - reachable - {self.root_feature}
-
-        return dependent_to_remove
+    # def analyse_removal(self,
+    #                     active,
+    #                     invocation_features):
+    #
+    #     active = set(active)
+    #
+    #
+    #     # Find reachable features
+    #     # The feature that are reachable from the invocation feature
+    #     # The feature that has at least one invocation path
+    #
+    #
+    #     reachable = self.get_reachable_features(
+    #         active,
+    #         invocation_features
+    #         )
+    #
+    #
+    #     # Remaining active features that cannot be reached
+    #
+    #
+    #     dependent_to_remove = active - reachable - {self.root_feature}
+    #
+    #     return dependent_to_remove
 
     
     
@@ -1204,3 +1205,5 @@ class AdaptationEngine:
 
         valid = all(results.values())
         return valid, summary + [""] + messages
+    
+    

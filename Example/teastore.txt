@@ -28,7 +28,8 @@ feature_model = {
         "CompilationWithRecom",
         "Recommender",
         "LowPower",
-        "FullPower"
+        "FullPower",
+	"ABC"
     },
 
     # Structural relationships
@@ -71,7 +72,8 @@ feature_model = {
             
             "Authorization":[
                 "LocalAuth",
-                "SSOAuth"
+                "SSOAuth",
+		"ABC"
                 ],
             "Persistence":[
                 "LocalCache",
