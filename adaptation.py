@@ -1,231 +1,224 @@
-
+#Created by Sourabh Pal
 # ADAPTATION ENGINE
 
 from collections import defaultdict, deque
-from data import root_feature, invocation_features
 
 
 class AdaptationEngine:
 
-    def __init__(self, feature_model, configuration):
-
+    def __init__(
+        self,
+        feature_model,
+        configuration,
+        root_feature,
+        invocation_features
+    ):
         self.fm = feature_model
         self.configuration = configuration
+        self.root_feature = root_feature
+        self.invocation_features = set(invocation_features)
 
     # FEATURE ADDITION
 
-    def add_feature(self, feature, selected_dependent_features=None):
-
-        messages = []
-
-        # Check feature existence
-
-        if feature not in self.fm.features:
-
-            return (False,["FAIL: Feature does not exist " "in the feature model."])
-
-        # Check whether feature is already in the active configuration
-
-        if feature in self.configuration.active:
-
-            return (False,["FAIL: Feature is already active."])
-
-        # present active configuration
-        old_active = set(self.configuration.active)
-
-        # Reconstruction
-
-        if selected_dependent_features is None:
-
-            selected_dependent_features = set()
-
-        selected_dependent_features = set(
-            selected_dependent_features)
-
-    
-
-        dependent_features = (selected_dependent_features)
-
-
-        # Construct new configuration
-        
-        new_active = (old_active 
-                      | dependent_features 
-                      | {feature})
-
-        messages.append(f"Requested addition: {feature}")
-
-        
-        # STRUCTURAL VALIDATION
-
-        (structural_ok, structural_messages, new_active) = (
-            self.validate_structural(feature, new_active))
-
-        messages.extend(structural_messages)
-
-        if not structural_ok:
-            return (False,messages)
-
-
-        # CROSS-TREE VALIDATION
-
-        cross_tree_ok, cross_tree_messages = (
-            self.validate_cross_tree(new_active))
-
-        messages.extend(cross_tree_messages)
-
-        if not cross_tree_ok:
-
-            return (False, messages)
-
-
-        # INVOCATION PATH VALIDATION
-        
-        
-        (invocation_path_ok, dependent_feature_to_add) = self.analyse_addition(
-            new_active,invocation_features)
-        
-        if not invocation_path_ok:
-            
-            messages.append(
-                f"FAIL: No invocation path exists "
-                f"from an active invocation feature "
-                f"to these feature. "
-                f"These features should choose "
-                f"as dependent feature: {dependent_feature_to_add}."
-                )
-            
-            return (False, messages)
-        
-        
-
-        #(path, missing_feature) = self.find_invocation_path(new_active,
-        #                                 feature, dependent_features)
-        
-        #if path is None:
-
-        #    messages.append(
-        #        f"FAIL: No invocation path exists "
-        #        f"from an active invocation feature "
-        #        f"to the added feature. "
-        #        f"Missing features: {missing_feature}."
-        #        )
-
-        #    return (False, messages)
-
-        messages.append("PASS: Invocation-path validation.")
-
-        # Accept configuration
-
-        self.configuration.update(new_active)
-
-        messages.append(
-            f"VALID: {feature} was added successfully."
-            )
-
-        return (True, messages)
+    # def add_feature(self, feature, selected_dependent_features=None):
+    #
+    #     messages = []
+    #
+    #     # Check feature existence
+    #
+    #     if feature not in self.fm.features:
+    #
+    #         return (False,["FAIL: Feature does not exist " "in the feature model."])
+    #
+    #     # Check whether feature is already in the active configuration
+    #
+    #     if feature in self.configuration.active:
+    #
+    #         return (False,["FAIL: Feature is already active."])
+    #
+    #     # present active configuration
+    #     old_active = set(self.configuration.active)
+    #
+    #     # Reconstruction
+    #
+    #     if selected_dependent_features is None:
+    #
+    #         selected_dependent_features = set()
+    #
+    #     selected_dependent_features = set(
+    #         selected_dependent_features)
+    #
+    #
+    #
+    #     dependent_features = (selected_dependent_features)
+    #
+    #
+    #     # Construct new configuration
+    #
+    #     new_active = (old_active 
+    #                   | dependent_features 
+    #                   | {feature})
+    #
+    #     messages.append(f"Requested addition: {feature}")
+    #
+    #
+    #     # STRUCTURAL VALIDATION
+    #
+    #     (structural_ok, structural_messages, new_active) = (
+    #         self.validate_structural(feature, new_active))
+    #
+    #     messages.extend(structural_messages)
+    #
+    #     if not structural_ok:
+    #         return (False,messages)
+    #
+    #
+    #     # CROSS-TREE VALIDATION
+    #
+    #     cross_tree_ok, cross_tree_messages = (
+    #         self.validate_cross_tree(new_active))
+    #
+    #     messages.extend(cross_tree_messages)
+    #
+    #     if not cross_tree_ok:
+    #
+    #         return (False, messages)
+    #
+    #
+    #     # INVOCATION PATH VALIDATION
+    #
+    #
+    #     (invocation_path_ok, dependent_feature_to_add) = self.analyse_addition(
+    #         new_active,self.invocation_features)
+    #
+    #     if not invocation_path_ok:
+    #
+    #         messages.append(
+    #             f"FAIL: No invocation path exists "
+    #             f"from an active invocation feature "
+    #             f"to these feature. "
+    #             f"These features should choose "
+    #             f"as dependent feature: {dependent_feature_to_add}."
+    #             )
+    #
+    #         return (False, messages)
+    #
+    #
+    #
+    #
+    #     messages.append("PASS: Invocation-path validation.")
+    #
+    #     # Accept configuration
+    #
+    #     self.configuration.update(new_active)
+    #
+    #     messages.append(
+    #         f"VALID: {feature} was added successfully."
+    #         )
+    #
+    #     return (True, messages)
     
 
     # FEATURE REMOVAL
    
-    def remove_feature(self, feature, 
-                       selected_dependent_features=None):
-
-        messages = []
-
-       
-        if feature == root_feature:
-
-            return (False,
-                    [
-                        "FAIL: Root feature AdaptableTeaStore "
-                        "cannot be removed."
-                        ])
-
-        old_active = set(self.configuration.active)
-
-        # Reconstruction
-      
-        #dependent_features = (self.reconstruct_removal(feature, old_active))
-        
-        dependent_features = (selected_dependent_features)
-
-        
-        # New configuration
-        
-        new_active = (old_active - dependent_features - {feature})
-
-        messages.append(f"Requested removal: {feature}")
-
-        if dependent_features:
-
-            messages.append(
-                "Dependent features removed: "
-                + ", ".join(sorted(dependent_features))
-                )
-
-        else:
-
-            messages.append("Dependent features removed: None")
-
-        # STRUCTURAL VALIDATION
-
-        (structural_ok, structural_messages, new_active) = (
-            self.validate_structural(feature, new_active))
-
-        messages.extend(structural_messages)
-
-        if not structural_ok:
-
-            return (False, messages)
-
-        # CROSS-TREE VALIDATION
-
-        cross_tree_ok, cross_tree_messages = (
-            self.validate_cross_tree(new_active))
-
-        messages.extend(cross_tree_messages)
-
-        if not cross_tree_ok:
-
-            return (False, messages)
-
-
-        
-        # INVOCATION PATH VALIDATION
-        
-        dependent_feature_to_remove = self.analyse_removal(
-            new_active,invocation_features)
-        
-        if dependent_feature_to_remove:
-            
-            messages.append(
-                f"FAIL: No invocation path exists "
-                f"from an active invocation feature "
-                f"to these feature. "
-                f"These features should choose "
-                f"as dependent feature: {dependent_feature_to_remove}."
-                )
-            
-            return (False, messages)
-        
-        messages.append("PASS: Invocation-path validation.")
-
-         
-        # ----------------------------------------------------
-        # Accept configuration
-        # ----------------------------------------------------
-
-        self.configuration.update(new_active)
-
-        messages.append(
-            f"VALID: {feature} was removed successfully."
-        )
-
-        return (
-            True,
-            messages
-        )
+    # def remove_feature(self, feature, 
+    #                    selected_dependent_features=None):
+    #
+    #     messages = []
+    #
+    #
+    #     if feature == self.root_feature:
+    #
+    #         return (False,
+    #                 [
+    #                     "FAIL: Root feature AdaptableTeaStore "
+    #                     "cannot be removed."
+    #                     ])
+    #
+    #     old_active = set(self.configuration.active)
+    #
+    #     # Reconstruction
+    #
+    #     #dependent_features = (self.reconstruct_removal(feature, old_active))
+    #
+    #     dependent_features = (selected_dependent_features)
+    #
+    #
+    #     # New configuration
+    #
+    #     new_active = (old_active - dependent_features - {feature})
+    #
+    #     messages.append(f"Requested removal: {feature}")
+    #
+    #     if dependent_features:
+    #
+    #         messages.append(
+    #             "Dependent features removed: "
+    #             + ", ".join(sorted(dependent_features))
+    #             )
+    #
+    #     else:
+    #
+    #         messages.append("Dependent features removed: None")
+    #
+    #     # STRUCTURAL VALIDATION
+    #
+    #     (structural_ok, structural_messages, new_active) = (
+    #         self.validate_structural(feature, new_active))
+    #
+    #     messages.extend(structural_messages)
+    #
+    #     if not structural_ok:
+    #
+    #         return (False, messages)
+    #
+    #     # CROSS-TREE VALIDATION
+    #
+    #     cross_tree_ok, cross_tree_messages = (
+    #         self.validate_cross_tree(new_active))
+    #
+    #     messages.extend(cross_tree_messages)
+    #
+    #     if not cross_tree_ok:
+    #
+    #         return (False, messages)
+    #
+    #
+    #
+    #     # INVOCATION PATH VALIDATION
+    #
+    #     dependent_feature_to_remove = self.analyse_removal(
+    #         new_active,self.invocation_features)
+    #
+    #     if dependent_feature_to_remove:
+    #
+    #         messages.append(
+    #             f"FAIL: No invocation path exists "
+    #             f"from an active invocation feature "
+    #             f"to these feature. "
+    #             f"These features should choose "
+    #             f"as dependent feature: {dependent_feature_to_remove}."
+    #             )
+    #
+    #         return (False, messages)
+    #
+    #     messages.append("PASS: Invocation-path validation.")
+    #
+    #
+    #     # ----------------------------------------------------
+    #     # Accept configuration
+    #     # ----------------------------------------------------
+    #
+    #     self.configuration.update(new_active)
+    #
+    #     messages.append(
+    #         f"VALID: {feature} was removed successfully."
+    #     )
+    #
+    #     return (
+    #         True,
+    #         messages
+    #     )
 
     
     # RECONSTRUCTION AFTER ADDITION
@@ -255,94 +248,94 @@ class AdaptationEngine:
     # RECONSTRUCTION AFTER REMOVAL
     # ========================================================
 
-    def reconstruct_removal(
-        self,
-        feature,
-        active
-    ):
-
-        dependent = set()
-
-        changed = True
-
-        while changed:
-
-            changed = False
-
-            current_active = (
-                active
-                - dependent
-                - {feature}
-            )
-
-            # ------------------------------------------------
-            # Cross-tree dependencies
-            # ------------------------------------------------
-
-            for source in current_active:
-
-                required_features = (
-                    self.fm.cross_tree[
-                        "requires"
-                    ].get(
-                        source,
-                        []
-                    )
-                )
-
-                # If source requires the feature being removed,
-                # source must also be removed.
-                if feature in required_features:
-
-                    if source not in dependent:
-
-                        dependent.add(
-                            source
-                        )
-
-                        changed = True
-
-            # ------------------------------------------------
-            # Structural descendants
-            # ------------------------------------------------
-
-            for parent in list(current_active):
-
-                structural_children = []
-
-                for relation_type in [
-                    "mandatory",
-                    "optional",
-                    "xor",
-                    "or"
-                ]:
-
-                    structural_children.extend(
-                        self.fm.structural[
-                            relation_type
-                        ].get(
-                            parent,
-                            []
-                        )
-                    )
-
-                for child in structural_children:
-
-                    if (
-                        child in current_active
-                        and self.has_structural_ancestor(
-                            child,
-                            feature
-                        )
-                    ):
-
-                        dependent.add(
-                            child
-                        )
-
-                        changed = True
-
-        return dependent
+    # def reconstruct_removal(
+    #     self,
+    #     feature,
+    #     active
+    # ):
+    #
+    #     dependent = set()
+    #
+    #     changed = True
+    #
+    #     while changed:
+    #
+    #         changed = False
+    #
+    #         current_active = (
+    #             active
+    #             - dependent
+    #             - {feature}
+    #         )
+    #
+    #         # ------------------------------------------------
+    #         # Cross-tree dependencies
+    #         # ------------------------------------------------
+    #
+    #         for source in current_active:
+    #
+    #             required_features = (
+    #                 self.fm.cross_tree[
+    #                     "requires"
+    #                 ].get(
+    #                     source,
+    #                     []
+    #                 )
+    #             )
+    #
+    #             # If source requires the feature being removed,
+    #             # source must also be removed.
+    #             if feature in required_features:
+    #
+    #                 if source not in dependent:
+    #
+    #                     dependent.add(
+    #                         source
+    #                     )
+    #
+    #                     changed = True
+    #
+    #         # ------------------------------------------------
+    #         # Structural descendants
+    #         # ------------------------------------------------
+    #
+    #         for parent in list(current_active):
+    #
+    #             structural_children = []
+    #
+    #             for relation_type in [
+    #                 "mandatory",
+    #                 "optional",
+    #                 "xor",
+    #                 "or"
+    #             ]:
+    #
+    #                 structural_children.extend(
+    #                     self.fm.structural[
+    #                         relation_type
+    #                     ].get(
+    #                         parent,
+    #                         []
+    #                     )
+    #                 )
+    #
+    #             for child in structural_children:
+    #
+    #                 if (
+    #                     child in current_active
+    #                     and self.has_structural_ancestor(
+    #                         child,
+    #                         feature
+    #                     )
+    #                 ):
+    #
+    #                     dependent.add(
+    #                         child
+    #                     )
+    #
+    #                     changed = True
+    #
+    #     return dependent
 
     # ========================================================
     # CHECK STRUCTURAL ANCESTOR
@@ -409,7 +402,7 @@ class AdaptationEngine:
         flag_feature = feature
         featuresInPath.add(feature)
         
-        while flag_feature != root_feature:
+        while flag_feature != self.root_feature:
             
             parent_found = False
             
@@ -442,7 +435,7 @@ class AdaptationEngine:
 
         # Root validation
 
-        if root_feature not in active:
+        if self.root_feature not in active:
             messages.append(
                 "FAIL: Root feature AdaptableTeaStore "
                 "must be active.")
@@ -583,7 +576,7 @@ class AdaptationEngine:
         # must be add as a dependent feature by the developer.
         for feature in active:
             
-            if feature == root_feature:
+            if feature == self.root_feature:
                 continue
             
             ParentPath = self.find_feature_path(feature)
@@ -745,7 +738,7 @@ class AdaptationEngine:
 
         # Start BFS from invocation features
 
-        for invocation_feature in (invocation_features):
+        for invocation_feature in (self.invocation_features):
 
             queue.append(invocation_feature)
 
@@ -1007,7 +1000,7 @@ class AdaptationEngine:
 
         # Find active features that are unreachable
 
-        unreachable = active - reachable - {root_feature}
+        unreachable = active - reachable - {self.root_feature}
         
         # Find missing features for unreachable features
         if unreachable:
@@ -1060,7 +1053,154 @@ class AdaptationEngine:
         # Remaining active features that cannot be reached
     
 
-        dependent_to_remove = active - reachable - {root_feature}
+        dependent_to_remove = active - reachable - {self.root_feature}
 
         return dependent_to_remove
 
+    
+    
+    def verify_configuration(self):
+        # Copies only: verification must not modify configuration.
+        active = set(self.configuration.active)
+        invocation = set(self.invocation_features)
+
+        messages = []
+        results = {}
+
+        def check(category, condition, failure):
+            results.setdefault(category, True)
+
+            if not condition:
+                results[category] = False
+                messages.append(f"FAIL [{category}]: {failure}")
+
+        check(
+            "Features",
+            active.issubset(self.fm.features),
+            f"Unknown active features: {sorted(active - self.fm.features)}"
+        )
+
+        check(
+            "Root",
+            self.root_feature in active,
+            f"Root feature {self.root_feature} must be active."
+        )
+
+        # Structural constraints.
+        for relation in ("mandatory", "optional", "xor", "or"):
+            category = relation.upper()
+            results[category] = True
+
+            for parent, children in self.fm.structural.get(
+                relation, {}
+            ).items():
+                children = set(children)
+                selected = children & active
+
+                # For every structural relation:
+                # active child implies active parent.
+                check(
+                    category,
+                    not selected or parent in active,
+                    f"Active children {sorted(selected)} require "
+                    f"their parent {parent} to be active."
+                )
+
+                if parent not in active:
+                    continue
+
+                if relation == "mandatory":
+                    missing = children - active
+                    check(
+                        category,
+                        not missing,
+                        f"{parent} is missing mandatory children: "
+                        f"{sorted(missing)}"
+                    )
+
+                elif relation == "xor":
+                    check(
+                        category,
+                        len(selected) == 1,
+                        f"{parent} needs exactly one child from "
+                        f"{sorted(children)}; selected: {sorted(selected)}"
+                    )
+
+                elif relation == "or":
+                    check(
+                        category,
+                        bool(selected),
+                        f"{parent} needs at least one child from "
+                        f"{sorted(children)}."
+                    )
+
+                # Optional children need no minimum selection.
+
+        # Cross-tree constraints.
+        results["REQUIRES"] = True
+        for source, targets in self.fm.cross_tree.get(
+            "requires", {}
+        ).items():
+            if source in active:
+                for target in targets:
+                    check(
+                        "REQUIRES",
+                        target in active,
+                        f"{source} requires {target}."
+                    )
+
+        results["EXCLUDES"] = True
+        for source, targets in self.fm.cross_tree.get(
+            "excludes", {}
+        ).items():
+            if source in active:
+                for target in targets:
+                    check(
+                        "EXCLUDES",
+                        target not in active,
+                        f"{source} and {target} cannot both be active."
+                    )
+
+        # Invocation selection must exist and contain active features.
+        check(
+            "INVOCATION",
+            bool(invocation),
+            "Choose invocation features from the dropdown and click Apply."
+        )
+
+        check(
+            "INVOCATION",
+            invocation.issubset(active),
+            f"Invocation features are inactive: "
+            f"{sorted(invocation - active)}"
+        )
+
+        # Existing graph uses directed structural and requires edges.
+        # Every active feature except the model root must be reachable.
+        if active.issubset(self.fm.features):
+            reachable = self.get_reachable_features(
+                active,
+                invocation & active
+            )
+
+            unreachable = active - reachable - {self.root_feature}
+
+            check(
+                "INVOCATION",
+                not unreachable,
+                f"No active invocation path to: {sorted(unreachable)}"
+            )
+        else:
+            check(
+                "INVOCATION",
+                False,
+                "Cannot verify paths while unknown active features exist."
+            )
+
+        summary = [
+            f"{'PASS' if passed else 'FAIL'}: {category}"
+            for category, passed in results.items()
+        ]
+
+        valid = all(results.values())
+        return valid, summary + [""] + messages
