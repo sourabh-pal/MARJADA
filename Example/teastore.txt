@@ -29,7 +29,9 @@ feature_model = {
         "Recommender",
         "LowPower",
         "FullPower",
-	"ABC"
+	"ABC",
+	"ABD",
+	"ABE"
     },
 
     # Structural relationships
@@ -63,7 +65,10 @@ feature_model = {
 
             "PageCompilation": [
                 "CompilationWithRecom"
-            ]
+            ],
+	    "WebUI": [
+                "ABD", "ABE"
+            ],
         },
 
         # XOR:
@@ -141,6 +146,12 @@ feature_model = {
             ],
             "FullPower": [
                 "PageInformation"
+            ],
+	     "ABD": [
+                "Authorization"
+            ],
+	    "ABE": [
+                "Google"
             ]
         },
         

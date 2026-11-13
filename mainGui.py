@@ -20,7 +20,8 @@ class MARJADAGUI:
         self.invocation_features = set()
         self.barebone_features = set()
         self.data_file = None
-        self.root.title("MARJADA - Feature Adaptation and Reconstruction")
+        self.root.title("MARJADA - Model-based Adaptive Reconstruction "
+                "for Just-in-time Activation and Deactivation")
         self.root.geometry("1400x800")
         self.root.minsize(1100, 650)
         self.create_menu()
@@ -133,44 +134,26 @@ class MARJADAGUI:
             "Section.TLabel",
             font=("Arial", 13, "bold")
             )
-    # ========================================================
+    
     # MAIN GUI LAYOUT
-    # ========================================================
     def create_layout(self):
-        # ----------------------------------------------------
+        
         # Title
-        # ----------------------------------------------------
-        title = ttk.Label(
-            self.root,
-            text="MARJADA",
-            style="Title.TLabel"
-        )
-        title.pack(
-            pady=(10, 0)
-        )
-        subtitle = ttk.Label(
-            self.root,
-            text=(
-                "Model-based Adaptive Reconstruction "
-                "for Just-in-time Activation and Deactivation"
-            )
-        )
-        subtitle.pack(
-            pady=(0, 10)
-        )
-        # ----------------------------------------------------
+        #title = ttk.Label(self.root,text="MARJADA", style="Title.TLabel")
+        #title.pack(pady=(10, 0))
+        #subtitle = ttk.Label(self.root, text=(
+        #    "Model-based Adaptive Reconstruction "
+        #    "for Just-in-time Activation and Deactivation"
+        #    )
+        #)
+        #subtitle.pack(pady=(0, 10))
+        
+        tk.Frame(self.root, height=20).pack()
+        
         # Main panel
-        # ----------------------------------------------------
-        main = ttk.PanedWindow(
-            self.root,
-            orient=tk.HORIZONTAL
-        )
-        main.pack(
-            fill=tk.BOTH,
-            expand=True,
-            padx=10,
-            pady=5
-        )
+        main = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
+        main.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
         # ====================================================
         # LEFT PANEL
         # ====================================================
@@ -804,7 +787,206 @@ class MARJADAGUI:
                 []
             )
         )
-        
+    def choose_invocation_paths(self, target, path_iterator, active, structural, cross_tree):
+        """Browse shortest-first paths, preview their union, confirm or return."""
+        popup = tk.Toplevel(self.root)
+        popup.title("Choose invocation paths")
+        popup.transient(self.root)
+        popup.geometry("1000x650")
+        result = None
+        paths = []
+        chosen_indices = []
+        exhausted = False
+        busy = False
+        labels = []
+
+        ttk.Label(
+            popup, text=f"Invocation paths to {target}", font=("Arial", 12, "bold")
+        ).pack(anchor="w", padx=15, pady=(15, 5))
+        ttk.Label(
+            popup, wraplength=950,
+            text="Paths are ordered by size (edge count). Select a path and add it to "
+                 "the list below. You may select several paths. Load more to browse "
+                 "longer alternatives; the displayed count is not a total until search ends."
+        ).pack(anchor="w", padx=15, pady=5)
+        row = ttk.Frame(popup)
+        row.pack(fill=tk.X, padx=15, pady=8)
+        combo = ttk.Combobox(row, state="readonly", width=85)
+        combo.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        status = tk.StringVar(master=popup, value="Loading paths...")
+        ttk.Label(popup, textvariable=status).pack(anchor="w", padx=15)
+        path_text = tk.Text(popup, height=6, wrap=tk.WORD)
+        path_text.pack(fill=tk.X, padx=15, pady=8)
+
+        def display_path(event=None):
+            index = combo.current()
+            path_text.configure(state="normal")
+            path_text.delete("1.0", tk.END)
+            if 0 <= index < len(paths):
+                path_text.insert(tk.END, " -> ".join(paths[index]))
+            path_text.configure(state="disabled")
+
+        combo.bind("<<ComboboxSelected>>", display_path)
+        ttk.Label(popup, text="Paths selected for confirmation:").pack(anchor="w", padx=15)
+        list_frame = ttk.Frame(popup)
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=5)
+        selection = tk.Listbox(list_frame, selectmode=tk.EXTENDED, exportselection=False)
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=selection.yview)
+        selection.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        selection.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        def add_path():
+            index = combo.current()
+            if index >= 0 and index not in chosen_indices:
+                chosen_indices.append(index)
+                selection.insert(tk.END, labels[index])
+
+        def remove_selected():
+            for index in reversed(selection.curselection()):
+                del chosen_indices[index]
+                selection.delete(index)
+
+        ttk.Button(row, text="Add path", command=add_path).pack(side=tk.LEFT, padx=8)
+        controls = ttk.Frame(popup)
+        controls.pack(fill=tk.X, padx=15, pady=10)
+        ttk.Button(controls, text="Remove selected paths", command=remove_selected).pack(side=tk.LEFT)
+
+        def load_more():
+            nonlocal busy
+            if busy or exhausted:
+                return
+            busy = True
+            load_button.configure(state="disabled")
+            status.set(f"Loading more paths... {len(paths)} loaded")
+
+            def step(remaining):
+                nonlocal busy, exhausted
+                if not popup.winfo_exists():
+                    return
+                try:
+                    path = next(path_iterator)
+                except StopIteration:
+                    exhausted = True
+                except Exception as error:
+                    busy = False
+                    load_button.configure(state="normal")
+                    status.set(f"Search error; {len(paths)} paths loaded")
+                    messagebox.showerror("Path search", str(error), parent=popup)
+                    return
+                else:
+                    paths.append(tuple(path))
+                    missing = set(path) - active
+                    labels.append(
+                        f"Path {len(paths)} | {len(path)-1} edges | "
+                        f"{len(path)} features | {len(missing)} missing"
+                    )
+                    combo["values"] = labels
+                    if combo.current() < 0:
+                        combo.current(0)
+                        display_path()
+                if not exhausted and remaining > 1:
+                    popup.after(1, lambda: step(remaining - 1))
+                    return
+                busy = False
+                load_button.configure(state="disabled" if exhausted else "normal")
+                status.set(
+                    f"{len(paths)} total paths. Search complete." if exhausted else
+                    f"{len(paths)} paths loaded. More may exist; click Load 20 more."
+                )
+            popup.after(1, lambda: step(20))
+
+        load_button = ttk.Button(controls, text="Load 20 more", command=load_more)
+        load_button.pack(side=tk.LEFT, padx=10)
+
+        def show_preview():
+            nonlocal result
+            # Show implicitly adds the currently displayed path, if none selected.
+            if not chosen_indices:
+                add_path()
+            if not chosen_indices:
+                messagebox.showwarning("No paths", "Choose a path first.", parent=popup)
+                return
+            selected_paths = [paths[i] for i in chosen_indices]
+            union = set().union(*(set(path) for path in selected_paths))
+            # Reject conflicting path unions before committing any choices.
+            required = set(union)
+            while True:
+                before = set(required)
+                for relation in ("mandatory", "optional", "xor", "or"):
+                    for parent, children in structural.get(relation, {}).items():
+                        children = set(children)
+                        if children & required:
+                            required.add(parent)
+                        if relation == "mandatory" and parent in required:
+                            required.update(children)
+                for source, targets in cross_tree.get("requires", {}).items():
+                    if source in required:
+                        required.update(targets)
+                if before == required:
+                    break
+            errors = []
+            for parent, children in structural.get("xor", {}).items():
+                conflict = required & set(children)
+                if len(conflict) > 1:
+                    errors.append(f"XOR {parent}: " + ", ".join(sorted(conflict)))
+            for source, targets in cross_tree.get("excludes", {}).items():
+                if source in required and required & set(targets):
+                    errors.append(f"Excludes conflict: {source} / " + ", ".join(sorted(required & set(targets))))
+            if errors:
+                messagebox.showerror(
+                    "Incompatible paths", "These paths cannot be combined:\n\n" + "\n".join(errors),
+                    parent=popup
+                )
+                return
+            preview = tk.Toplevel(popup)
+            preview.title("Confirm missing invocation-path features")
+            preview.transient(popup)
+            preview.geometry("950x600")
+            text = tk.Text(preview, wrap=tk.WORD)
+            text.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+            details = "SELECTED PATHS\n\n" + "\n\n".join(
+                f"Path {i+1}: " + " -> ".join(paths[i]) for i in chosen_indices
+            )
+            missing = sorted(union - active)
+            dependency_missing = sorted(required - active - union)
+            details += f"\n\nMISSING ON-PATH FEATURES ({len(missing)})\n"
+            details += "\n".join(missing) or "(none; already active)"
+            details += f"\n\nADDITIONAL REQUIRED DEPENDENCIES ({len(dependency_missing)})\n"
+            details += "\n".join(dependency_missing) or "(none)"
+            details += (
+                "\n\nConfirm these paths? Remaining XOR/OR choices and full validation "
+                "run next. No configuration changes are committed by this preview."
+            )
+            text.insert(tk.END, details)
+            text.configure(state="disabled")
+            buttons = ttk.Frame(preview)
+            buttons.pack(fill=tk.X, padx=15, pady=(0, 15))
+
+            def no():
+                preview.destroy()
+                popup.grab_set()
+
+            def yes():
+                nonlocal result
+                result = selected_paths
+                preview.destroy()
+                popup.destroy()
+
+            ttk.Button(buttons, text="No - choose another path", command=no).pack(side=tk.LEFT)
+            ttk.Button(buttons, text="Yes - use these paths", command=yes).pack(side=tk.RIGHT)
+            preview.protocol("WM_DELETE_WINDOW", no)
+            preview.bind("<Escape>", lambda event: no())
+            preview.grab_set()
+
+        ttk.Button(controls, text="Show", command=show_preview).pack(side=tk.RIGHT)
+        ttk.Button(controls, text="Cancel ADD", command=popup.destroy).pack(side=tk.RIGHT, padx=8)
+        popup.bind("<Escape>", lambda event: popup.destroy())
+        popup.grab_set()
+        load_more()
+        self.root.wait_window(popup)
+        return result
+
     def choose_add_features(
         self,
         title,
@@ -977,7 +1159,8 @@ class MARJADAGUI:
             success, messages = automatic_add(
                 self.engine,
                 feature,
-                self.choose_add_features
+                self.choose_add_features,
+                choose_paths=self.choose_invocation_paths
             )
         elif operation == "REMOVE":
             self.engine.invocation_features = set(

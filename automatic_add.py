@@ -1,13 +1,17 @@
-# Created by Sourabh Pal
-
+"""Transactional ADD for MARJADA. No GUI or configuration changes before commit."""
 from collections import deque
 from heapq import heappop, heappush
-
 class Cancelled(Exception):
     pass
-
-def automatic_add(engine, feature, choose):
-
+def automatic_add(engine, feature, choose, choose_paths=None):
+    """choose(title, options, multiple, selected) -> set of options or None.
+    Optional edges are traversed only to establish invocation reachability.
+    This revision preserves that behavior; it does not auto-activate all optional
+    descendants. Paths minimize inactive nodes first, then hop count. This is an
+    interactive reconstructor, not a complete search over all valid configurations.
+    Requires cycles terminate through visited sets; repeated reconstruction states
+    abort the transaction. Excluded/rejected features remain blocked for this ADD.
+    """
     old = set(engine.configuration.active)
     active = set(old)
     blocked = set()
@@ -60,7 +64,7 @@ def automatic_add(engine, feature, choose):
         # Prefer paths that need fewer inactive features, then fewer edges.
         # A shorter inactive XOR branch must not displace an existing active
         # invocation path merely because it has fewer hops.
-        if target in reachable(active):
+        if target in reachable(active) and not (choose_paths is not None and target == feature):
             return
 
         forbidden = set(blocked)
@@ -76,6 +80,30 @@ def automatic_add(engine, feature, choose):
                 forbidden.update(children - forced)
 
         edges = graph(set(fm.features) - forbidden)
+        if choose_paths is not None:
+            from invocation_paths import iter_invocation_paths
+            baseline = old if target == feature else set(active)
+            selected_paths = choose_paths(
+                target, iter_invocation_paths(edges, roots, target),
+                set(baseline), structural, fm.cross_tree
+            )
+            if selected_paths is None:
+                raise Cancelled("Path selection cancelled; configuration unchanged.")
+            selected_paths = [tuple(path) for path in selected_paths]
+            if not selected_paths:
+                raise Cancelled("Choose at least one invocation path.")
+            path_features = set()
+            for path in selected_paths:
+                if (not path or path[0] not in roots or path[-1] != target
+                        or len(set(path)) != len(path)
+                        or any(node not in edges for node in path)
+                        or any(b not in edges[a] for a, b in zip(path, path[1:]))):
+                    raise Cancelled("Invalid invocation path selection.")
+                path_features.update(path)
+                log.append("Selected invocation path: " + " -> ".join(path))
+            include(path_features)
+            required_features.update(path_features)
+            return
         distances = {f: (0, 0) for f in roots if f in edges}
         parents = {}
         queue = [(0, 0, f) for f in sorted(distances)]
@@ -198,8 +226,10 @@ def automatic_add(engine, feature, choose):
         include({engine.root_feature, feature})
         connect(feature)
         seen_states = set()
+        xor_decisions = set()
+        branch_choices = set()
         for iteration in range(1000):
-            state = (frozenset(active), frozenset(blocked))
+            state = (frozenset(active), frozenset(blocked), frozenset(xor_decisions), frozenset(branch_choices))
             if state in seen_states:
                 raise Cancelled(
                     "Repeated reconstruction state detected; ADD stopped without changes. "
@@ -234,42 +264,74 @@ def automatic_add(engine, feature, choose):
                         continue
                     children = set(children)
                     selected = children & active
-                    if (relation == "xor" and len(selected) != 1) or not selected:
+                    forced = children & required_features
+                    # A manually chosen branch can lead into an already-active
+                    # XOR parent. Review that next group instead of silently
+                    # retaining its old child (e.g. FullPower -> PageInformation).
+                    branch_targets = set().union(*(
+                        set(fm.cross_tree.get("requires", {}).get(source, ()))
+                        for source in branch_choices & active
+                    )) if branch_choices & active else set()
+                    has_downstream_dependencies = any(
+                        fm.cross_tree.get("requires", {}).get(child)
+                        or any(structural.get(kind, {}).get(child)
+                               for kind in ("mandatory", "optional", "xor", "or"))
+                        for child in children
+                    )
+                    review_downstream = (
+                        relation == "xor" and parent in branch_targets
+                        and parent not in xor_decisions and not forced
+                        and has_downstream_dependencies
+                    )
+                    affected_multi_xor = (
+                        relation == "xor" and len(children) > 2
+                        and parent not in xor_decisions
+                        and (bool(forced) or parent not in old or len(selected) != 1)
+                    )
+                    if (review_downstream or affected_multi_xor
+                            or (relation == "xor" and len(selected) != 1) or not selected):
                         options = children - blocked
                         if not options:
                             raise Cancelled(f"No available {relation.upper()} child for {parent}.")
-                        forced = children & required_features
-                        if relation == "xor" and forced:
-                            if len(forced) != 1:
+                        if relation == "xor":
+                            if len(forced) > 1:
                                 raise Cancelled(
-                                    "Requested feature requires conflicting "
-                                    "XOR dependencies: "
+                                    "Requested feature requires conflicting XOR children: "
                                     + ", ".join(sorted(forced))
                                 )
                             if not forced <= options:
-                                raise Cancelled(
-                                    "A required XOR dependency "
-                                    "was previously removed."
-                                )
-                            # No popup: this ancestor is necessary
-                            # to activate the requested feature.
-                            chosen = forced
-                            log.append(
-                                f"Automatic XOR choice: "
-                                f"{next(iter(chosen))} "
-                                f"is required by the request/path for {feature}."
+                                raise Cancelled("A required XOR dependency was removed.")
+                            needs_user_choice = (
+                                len(children) > 2 or review_downstream
+                                or (not forced and len(selected) != 1 and len(options) > 1)
                             )
+                            if needs_user_choice:
+                                chosen = ask(
+                                    f"XOR: {parent} has {len(children)} total children. "
+                                    "Choose exactly one. Required by this request/path: "
+                                    + (", ".join(sorted(forced)) or "(none)")
+                                    + ". An incompatible choice cancels ADD.",
+                                    options, False, forced or selected
+                                )
+                                xor_decisions.add(parent)
+                                branch_choices.update(chosen)
+                                if not forced <= chosen:
+                                    raise Cancelled(
+                                        "Choice conflicts with the requested feature/path; ADD cancelled."
+                                    )
+                            else:
+                                # A fixed request/path or sole option needs no guess.
+                                # Unresolved downstream binary groups prompt above.
+                                chosen = forced or (selected if len(selected) == 1 else
+                                                    {sorted(options)[0]})
+                                log.append(
+                                    f"Automatic XOR choice for {parent}: "
+                                    + ", ".join(sorted(chosen))
+                                )
                         else:
                             chosen = ask(
-                                f"{relation.upper()}: "
-                                f"choose children for {parent}. "
-                                f"Active now: "
-                                f"{', '.join(sorted(selected)) or '(none)'}. "
-                                "Unselected active children will be removed; "
-                                "all constraints will be checked again.",
-                                options,
-                                relation == "or",
-                                selected
+                                f"OR: choose children for {parent}.",
+                                options, True, selected
                             )
                         removed = selected - chosen
                         if removed & protected:
