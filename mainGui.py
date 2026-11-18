@@ -1,15 +1,18 @@
 #Created by Sourabh Pal
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import types
-import os
+#import os
 from model import FeatureModel
 from config import Configuration
 from adaptation import AdaptationEngine
 from automatic_add import automatic_add
 from automatic_remove import automatic_remove
+
 # GUI
 class MARJADAGUI:
+    
     def __init__(self, root):
         self.root = root
         # The feature model is loaded through File -> Open Feature Model.
@@ -28,13 +31,11 @@ class MARJADAGUI:
         self.create_styles()
         self.create_layout()
         self.show_empty_state()
+        
     def create_menu(self):
         menubar = tk.Menu(self.root)
         file_menu = tk.Menu(menubar, tearoff=0)
-        file_menu.add_command(
-            label="Open Feature Model...",
-            command=self.open_feature_model
-        )
+        file_menu.add_command(label="Open Feature Model...", command=self.open_feature_model)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.destroy)
         menubar.add_cascade(label="File", menu=file_menu)
@@ -49,15 +50,14 @@ class MARJADAGUI:
         #)
         #menubar.add_cascade(label="Help", menu=help_menu)
         self.root.config(menu=menubar)
+        
     def open_feature_model(self):
         file_path = filedialog.askopenfilename(
             parent=self.root,
             title="Select a feature-model data file",
             filetypes=[
-                ("Feature model data files", "*.py *.txt"),
-                ("Python files", "*.py"),
-                ("Text files", "*.txt"),
-                ("All files", "*.*")
+                ("Feature model data files", "*.txt"),
+                ("Text files", "*.txt")
             ]
         )
         if not file_path:
@@ -87,18 +87,15 @@ class MARJADAGUI:
                 module.root_feature,
                 set()
             )
+            
             # Replace the current model only after successful loading.
             self.fm = new_fm
             self.configuration = new_configuration
             self.engine = new_engine
             self.root_feature = module.root_feature
-            #self.invocation_features = set(module.invocation_features)
             self.invocation_features = set()
             self.barebone_features = set(module.barebone_features)
             self.data_file = file_path
-            self.root.title(
-                "MARJADA - " + os.path.basename(file_path)
-            )
             self.refresh_all()
             self.result_text.delete("1.0", tk.END)
             self.result_text.insert(
@@ -112,6 +109,7 @@ class MARJADAGUI:
                 "Feature Model Load Error",
                 f"Could not load the selected file.\\\n\\\n{error}"
             )
+            
     def show_empty_state(self):
         self.result_text.delete("1.0", tk.END)
         self.result_text.insert(
@@ -119,6 +117,7 @@ class MARJADAGUI:
             "No feature model loaded.\\\n"
             "Select File → Open Feature Model... to load a data file."
         )
+        
     # STYLES
     def create_styles(self):
         style = ttk.Style()
@@ -126,27 +125,12 @@ class MARJADAGUI:
             style.theme_use("clam")
         except tk.TclError:
             pass
-        style.configure(
-            "Title.TLabel",
-            font=("Arial", 22, "bold")
-            )
-        style.configure(
-            "Section.TLabel",
-            font=("Arial", 13, "bold")
-            )
+        style.configure("Title.TLabel", font=("Arial", 22, "bold"))
+        style.configure("Section.TLabel", font=("Arial", 13, "bold"))
+    
     
     # MAIN GUI LAYOUT
     def create_layout(self):
-        
-        # Title
-        #title = ttk.Label(self.root,text="MARJADA", style="Title.TLabel")
-        #title.pack(pady=(10, 0))
-        #subtitle = ttk.Label(self.root, text=(
-        #    "Model-based Adaptive Reconstruction "
-        #    "for Just-in-time Activation and Deactivation"
-        #    )
-        #)
-        #subtitle.pack(pady=(0, 10))
         
         tk.Frame(self.root, height=20).pack()
         
@@ -154,60 +138,21 @@ class MARJADAGUI:
         main = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
         main.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # ====================================================
         # LEFT PANEL
-        # ====================================================
-        left = ttk.Frame(
-            main
-        )
-        main.add(
-            left,
-            weight=3
-        )
-        model_label = ttk.Label(
-            left,
-            text="Feature Model",
-            style="Section.TLabel"
-        )
-        model_label.pack(
-            anchor="w",
-            pady=(0, 5)
-        )
-        # ----------------------------------------------------
+        left = ttk.Frame(main)
+        main.add(left, weight=3)
+        model_label = ttk.Label(left, text="Feature Model", style="Section.TLabel")
+        model_label.pack(anchor="w", pady=(0, 5))
+       
         # Feature tree
-        # ----------------------------------------------------
-        self.tree = ttk.Treeview(
-            left,
-            columns=(
-                "relation",
-                "state"
-            ),
-            show="tree headings"
-        )
-        self.tree.heading(
-            "#0",
-            text="Feature"
-        )
-        self.tree.heading(
-            "relation",
-            text="Relation"
-        )
-        self.tree.heading(
-            "state",
-            text="State"
-        )
-        self.tree.column(
-            "#0",
-            width=260
-        )
-        self.tree.column(
-            "relation",
-            width=120
-        )
-        self.tree.column(
-            "state",
-            width=100
-        )
+        self.tree = ttk.Treeview(left, columns=("relation", "state"), 
+                                 show="tree headings")
+        self.tree.heading("#0", text="Feature")
+        self.tree.heading("relation", text="Relation")
+        self.tree.heading("state", text="State")
+        self.tree.column("#0", width=260)
+        self.tree.column("relation", width=120)
+        self.tree.column("state", width=100)
         tree_scroll = ttk.Scrollbar(
             left,
             orient=tk.VERTICAL,
@@ -787,7 +732,7 @@ class MARJADAGUI:
                 []
             )
         )
-    def choose_invocation_paths(self, target, path_iterator, active, structural, cross_tree):
+    def choose_invocation_paths(self, target, path_iterator, active, structural, cross_tree, operation="ADD"):
         """Browse shortest-first paths, preview their union, confirm or return."""
         popup = tk.Toplevel(self.root)
         popup.title("Choose invocation paths")
@@ -980,7 +925,7 @@ class MARJADAGUI:
             preview.grab_set()
 
         ttk.Button(controls, text="Show", command=show_preview).pack(side=tk.RIGHT)
-        ttk.Button(controls, text="Cancel ADD", command=popup.destroy).pack(side=tk.RIGHT, padx=8)
+        ttk.Button(controls, text=f"Cancel {operation}", command=popup.destroy).pack(side=tk.RIGHT, padx=8)
         popup.bind("<Escape>", lambda event: popup.destroy())
         popup.grab_set()
         load_more()
@@ -1169,7 +1114,10 @@ class MARJADAGUI:
             success, messages = automatic_remove(
                 self.engine,
                 feature,
-                self.choose_add_features
+                self.choose_add_features,
+                choose_paths=lambda *args: self.choose_invocation_paths(
+                    *args, operation="REMOVE"
+                )
             )
         else:
             return

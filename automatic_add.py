@@ -82,7 +82,7 @@ def automatic_add(engine, feature, choose, choose_paths=None):
         edges = graph(set(fm.features) - forbidden)
         if choose_paths is not None:
             from invocation_paths import iter_invocation_paths
-            baseline = old if target == feature else set(active)
+            baseline = set(old)  # Count every path against the pre-ADD configuration.
             selected_paths = choose_paths(
                 target, iter_invocation_paths(edges, roots, target),
                 set(baseline), structural, fm.cross_tree

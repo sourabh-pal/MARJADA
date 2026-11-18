@@ -28,10 +28,7 @@ feature_model = {
         "CompilationWithRecom",
         "Recommender",
         "LowPower",
-        "FullPower",
-	"ABC",
-	"ABD",
-	"ABE"
+        "FullPower"
     },
 
     # Structural relationships
@@ -65,10 +62,7 @@ feature_model = {
 
             "PageCompilation": [
                 "CompilationWithRecom"
-            ],
-	    "WebUI": [
-                "ABD", "ABE"
-            ],
+            ]
         },
 
         # XOR:
@@ -77,8 +71,7 @@ feature_model = {
             
             "Authorization":[
                 "LocalAuth",
-                "SSOAuth",
-		"ABC"
+                "SSOAuth"
                 ],
             "Persistence":[
                 "LocalCache",
@@ -146,12 +139,6 @@ feature_model = {
             ],
             "FullPower": [
                 "PageInformation"
-            ],
-	     "ABD": [
-                "Authorization"
-            ],
-	    "ABE": [
-                "Google"
             ]
         },
         
