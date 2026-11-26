@@ -26,7 +26,7 @@ class MARJADAGUI:
         self.root.title("MARJADA - Model-based Adaptive Reconstruction "
                 "for Just-in-time Activation and Deactivation")
         self.root.geometry("1400x800")
-        self.root.minsize(1100, 650)
+        self.root.minsize(1000, 560)
         self.create_menu()
         self.create_styles()
         self.create_layout()
@@ -120,10 +120,17 @@ class MARJADAGUI:
         
     # STYLES
     def create_styles(self):
-        style = ttk.Style()
+        style = ttk.Style(self.root)
+        # Keep Cocoa widgets on Tk's native Aqua theme. Do not force the
+        # cross-platform clam renderer on a macOS window.
         try:
-            style.theme_use("clam")
+            window_system = self.root.tk.call("tk", "windowingsystem")
+            available = style.theme_names()
+            preferred = "aqua" if window_system == "aqua" else "clam"
+            if preferred in available and style.theme_use() != preferred:
+                style.theme_use(preferred)
         except tk.TclError:
+            # Retain the working platform theme if a theme is unavailable.
             pass
         style.configure("Title.TLabel", font=("Arial", 22, "bold"))
         style.configure("Section.TLabel", font=("Arial", 13, "bold"))
@@ -131,289 +138,137 @@ class MARJADAGUI:
     
     # MAIN GUI LAYOUT
     def create_layout(self):
-        
-        tk.Frame(self.root, height=20).pack()
-        
-        # Main panel
-        main = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        main.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # LEFT PANEL
-        left = ttk.Frame(main)
-        main.add(left, weight=3)
-        model_label = ttk.Label(left, text="Feature Model", style="Section.TLabel")
-        model_label.pack(anchor="w", pady=(0, 5))
-       
-        # Feature tree
-        self.tree = ttk.Treeview(left, columns=("relation", "state"), 
-                                 show="tree headings")
-        self.tree.heading("#0", text="Feature")
-        self.tree.heading("relation", text="Relation")
-        self.tree.heading("state", text="State")
-        self.tree.column("#0", width=260)
-        self.tree.column("relation", width=120)
-        self.tree.column("state", width=100)
-        tree_scroll = ttk.Scrollbar(
-            left,
-            orient=tk.VERTICAL,
-            command=self.tree.yview
-        )
-        self.tree.configure(
-            yscrollcommand=tree_scroll.set
-        )
-        self.tree.pack(
-            side=tk.LEFT,
-            fill=tk.BOTH,
-            expand=True
-        )
-        tree_scroll.pack(
-            side=tk.RIGHT,
-            fill=tk.Y
-        )
-        # ====================================================
-        # MIDDLE PANEL
-        # ====================================================
-        middle = ttk.Frame(
-            main
-        )
-        main.add(
-            middle,
-            weight=2
-        )
-        # ----------------------------------------------------
-        # Active features
-        # ----------------------------------------------------
-        active_label = ttk.Label(
-            middle,
-            text="Active Configuration",
-            style="Section.TLabel"
-        )
-        active_label.pack(
-            anchor="w"
-        )
-        self.active_list = tk.Listbox(
-            middle,
-            height=15
-        )
-        self.active_list.pack(
-            fill=tk.BOTH,
-            expand=True,
-            pady=(5, 15)
-        )
-        # ----------------------------------------------------
-        # Inactive features
-        # ----------------------------------------------------
-        inactive_label = ttk.Label(
-            middle,
-            text="Inactive Features",
-            style="Section.TLabel"
-        )
-        inactive_label.pack(
-            anchor="w"
-        )
-        self.inactive_list = tk.Listbox(
-            middle,
-            height=15
-        )
-        self.inactive_list.pack(
-            fill=tk.BOTH,
-            expand=True,
-            pady=(5, 10)
-        )
-        # ====================================================
-        # RIGHT PANEL
-        # ====================================================
-        right = ttk.Frame(
-            main
-        )
-        main.add(
-            right,
-            weight=3
-        )
-        # ----------------------------------------------------
-        # Adaptation request
-        # ----------------------------------------------------
-        adaptation_header = ttk.Frame(right)
-        adaptation_header.pack(fill=tk.X)
-        ttk.Label(
-            adaptation_header,
-            text="Adaptation Request",
-            style="Section.TLabel"
-        ).pack(side=tk.LEFT)
-        self.invocation_button = ttk.Button(
-            adaptation_header,
-            text="Invocation Features",
-            command=self.open_invocation_dropdown
-        )
-        self.invocation_button.pack(
-            side=tk.LEFT,
-            padx=(85, 0)
-        )
-        self.invocation_popup = None
-        request_frame = ttk.Frame(
-            right
-        )
-        request_frame.pack(
-            fill=tk.X,
-            pady=20
-        )
-        # ----------------------------------------------------
-        # Operation
-        # ----------------------------------------------------
-        ttk.Label(
-            request_frame,
-            text="Operation:"
-        ).grid(
-            row=0,
-            column=0,
-            sticky="w"
-        )
-        self.operation = ttk.Combobox(
-            request_frame,
-            values=[
-                "ADD",
-                "REMOVE"
-            ],
-            state="readonly",
-            width=12
-        )
-        self.operation.current(
-            0
-        )
-        self.operation.grid(
-            row=0,
-            column=1,
-            padx=8
-        )
-        # ----------------------------------------------------
-        # Feature
-        # ----------------------------------------------------
-        ttk.Label(
-            request_frame,
-            text="Feature:"
-        ).grid(
-            row=0,
-            column=2,
-            sticky="w"
-        )
-        self.feature_combo = ttk.Combobox(
-            request_frame,
-            state="readonly",
-            width=30
-        )
-        self.feature_combo.grid(
-            row=0,
-            column=3,
-            padx=8
-        )
-        # Switching operation refreshes the selectable active/inactive features.
-        self.operation.bind(
-            "<<ComboboxSelected>>",
-            lambda event: self.refresh_feature_combo()
-        )
+        # Keep all three panels allocated during resize. Every scrolling view
+        # has its own container; labels never compete with side-packed views.
+        self.root.rowconfigure(0, weight=1)
+        self.root.columnconfigure(0, weight=1)
+        self.main_panes = tk.PanedWindow(
+            self.root, orient=tk.HORIZONTAL, sashwidth=7,
+            sashrelief=tk.RAISED, borderwidth=0, opaqueresize=True)
+        self.main_panes.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)
+        left = ttk.Frame(self.main_panes, padding=4)
+        middle = ttk.Frame(self.main_panes, padding=4)
+        right = ttk.Frame(self.main_panes, padding=4)
+        self.main_panes.add(left, minsize=280, width=430, stretch="always")
+        self.main_panes.add(middle, minsize=220, width=280, stretch="always")
+        self.main_panes.add(right, minsize=420, width=620, stretch="always")
+        self.layout_panels = (left, middle, right)
 
-        # Apply button
-        self.apply_button = ttk.Button(right,
-                                       text="Apply Adaptation",
+        def scroll_view(parent, widget_class, **options):
+            frame = ttk.Frame(parent)
+            frame.rowconfigure(0, weight=1)
+            frame.columnconfigure(0, weight=1)
+            view = widget_class(frame, **options)
+            vertical = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=view.yview)
+            horizontal = ttk.Scrollbar(frame, orient=tk.HORIZONTAL, command=view.xview)
+            view.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
+            view.grid(row=0, column=0, sticky="nsew")
+            vertical.grid(row=0, column=1, sticky="ns")
+            horizontal.grid(row=1, column=0, sticky="ew")
+            return frame, view
+
+        left.rowconfigure(1, weight=1)
+        left.columnconfigure(0, weight=1)
+        ttk.Label(left, text="Feature Model", style="Section.TLabel").grid(
+            row=0, column=0, sticky="w", pady=(0, 6))
+        frame, self.tree = scroll_view(
+            left, ttk.Treeview, columns=("relation", "state"), show="tree headings")
+        frame.grid(row=1, column=0, sticky="nsew")
+        for column, label, width in (("#0", "Feature", 260),
+                                      ("relation", "Relation", 110),
+                                      ("state", "State", 85)):
+            self.tree.heading(column, text=label)
+            self.tree.column(column, width=width, minwidth=75, stretch=False)
+
+        middle.columnconfigure(0, weight=1)
+        middle.rowconfigure(1, weight=1, uniform="feature_lists")
+        middle.rowconfigure(3, weight=1, uniform="feature_lists")
+        for row, label, attribute in ((0, "Active Configuration", "active_list"),
+                                      (2, "Inactive Features", "inactive_list")):
+            ttk.Label(middle, text=label, style="Section.TLabel").grid(
+                row=row, column=0, sticky="w", pady=(4, 5))
+            frame, view = scroll_view(middle, tk.Listbox, height=5, width=1,
+                                      exportselection=False)
+            frame.grid(row=row+1, column=0, sticky="nsew", pady=(0, 8))
+            setattr(self, attribute, view)
+
+        right.columnconfigure(0, weight=1)
+        right.rowconfigure(4, weight=1)
+        header = ttk.Frame(right)
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        header.columnconfigure(0, weight=1)
+        ttk.Label(header, text="Adaptation Request", style="Section.TLabel").grid(
+            row=0, column=0, sticky="w")
+        self.invocation_button = ttk.Button(
+            header, text="Invocation Features", command=self.open_invocation_dropdown)
+        self.invocation_button.grid(row=0, column=1, sticky="e", padx=(8, 0))
+        self.invocation_popup = None
+        request_frame = ttk.Frame(right)
+        request_frame.grid(row=1, column=0, sticky="ew")
+        request_frame.columnconfigure(1, weight=1)
+        ttk.Label(request_frame, text="Operation:").grid(row=0, column=0, sticky="w")
+        self.operation = ttk.Combobox(request_frame, values=["ADD", "REMOVE"],
+                                      state="readonly", width=12)
+        self.operation.current(0)
+        self.operation.grid(row=0, column=1, sticky="w", padx=8, pady=4)
+        ttk.Label(request_frame, text="Feature:").grid(row=1, column=0, sticky="w")
+        self.feature_combo = ttk.Combobox(request_frame, state="readonly", width=18)
+        self.feature_combo.grid(row=1, column=1, sticky="ew", padx=8, pady=4)
+        self.operation.bind("<<ComboboxSelected>>", lambda event: self.refresh_feature_combo())
+        self.apply_button = ttk.Button(right, text="Apply Adaptation",
                                        command=self.apply_adaptation)
-        self.apply_button.pack(fill=tk.X,
-                               pady=5)
-        # Verification result
-        result_label = ttk.Label(
-            right,
-            text="Verification Result",
-            style="Section.TLabel"
-        )
-        result_label.pack(
-            anchor="w",
-            pady=(15, 5)
-        )
-        self.result_text = tk.Text(
-            right,
-            height=20,
-            wrap=tk.WORD,
-            font=(
-                "Courier New",
-                10
-            )
-        )
-        self.result_text.pack(
-            fill=tk.BOTH,
-            expand=True
-        )
-        # BOTTOM BUTTONS
-        bottom = ttk.Frame(
-            self.root
-        )
-        bottom.pack(
-            fill=tk.X,
-            padx=10,
-            pady=10
-        )
-        ttk.Button(
-            bottom,
-            text="Reset Configuration",
-            command=self.reset_configuration
-        ).pack(
-            side=tk.LEFT
-        )
-        ttk.Button(
-            bottom,
-            text="Show Active Graph",
-            command=self.show_graph
-        ).pack(
-            side=tk.LEFT,
-            padx=10
-        )
-        ttk.Button(
-            bottom,
-            text="Verify Configuration",
-            command=self.verify_current_configuration
-        ).pack(
-            side=tk.LEFT
-        )
-        #ttk.Button(
-        #    bottom,
-        #    text="Exit",
-        #    command=self.root.destroy
-        #).pack(
-        #    side=tk.RIGHT
-        #)
-        # Operation change event
-        self.operation.bind(
-            "<<ComboboxSelected>>",
-            lambda event:
-                self.refresh_feature_combo()
-        )
+        self.apply_button.grid(row=2, column=0, sticky="ew", pady=8)
+        ttk.Label(right, text="Verification Result", style="Section.TLabel").grid(
+            row=3, column=0, sticky="w", pady=(6, 5))
+        frame, self.result_text = scroll_view(
+            right, tk.Text, height=5, width=1, wrap=tk.WORD, font=("Courier New", 10))
+        frame.grid(row=4, column=0, sticky="nsew")
+
+        bottom = ttk.Frame(self.root)
+        bottom.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
+        for column, (label, command) in enumerate((
+                ("Reset Configuration", self.reset_configuration),
+                ("Show Active Graph", self.show_graph),
+                ("Verify Configuration", self.verify_current_configuration))):
+            ttk.Button(bottom, text=label, command=command).grid(
+                row=0, column=column, sticky="w", padx=(0, 10))
+
+
+
+    # Verify the Barebone configuration or active configuration
     def verify_current_configuration(self):
+        
         if self.engine is None or self.configuration is None:
             messagebox.showwarning(
                 "No Feature Model",
                 "Load a feature model first.",
                 parent=self.root
-            )
+                )
             return
-        # Use only the selection committed through Apply.
-        self.engine.invocation_features = set(
-            self.invocation_features
-        )
+        
+        # Invocation feature selected based on the choice of the user
+        self.engine.invocation_features = set(self.invocation_features)
         valid, messages = self.engine.verify_configuration()
-        status = (
-            "REALISABLE"
-            if valid
-            else "NOT REALISABLE"
-        )
+        
+        status = ("REALISABLE" if valid else "NOT REALISABLE")
+        
         report = (
-            f"CURRENT CONFIGURATION: {status}\n\n"
-            + "\n".join(messages)
-        )
+            f"CURRENT CONFIGURATION: {status}\n\n" + "\n".join(messages)
+            )
+        
         self.result_text.delete("1.0", tk.END)
         self.result_text.insert(tk.END, report)
+        
+        
+        
+        
     def close_invocation_dropdown(self):
         popup = self.invocation_popup
         if popup is not None and popup.winfo_exists():
             popup.destroy()
         self.invocation_popup = None
+        
+        
     def refresh_invocation_selection(self):
         """Keep invocation features limited to active features."""
         if self.configuration is None or self.engine is None:
@@ -436,38 +291,37 @@ class MARJADAGUI:
             ),
             state="normal"
         )
+        
+        
+    # Open Invocation feature list in the drop down from all the active features
     def open_invocation_dropdown(self):
+        
         if self.configuration is None or self.engine is None:
             messagebox.showwarning(
                 "No Feature Model",
                 "Load a feature model first.",
                 parent=self.root
-            )
+                )
             return
+        
         # Clicking the button again closes the dropdown.
-        if (
-            self.invocation_popup is not None
+        if (self.invocation_popup is not None
             and self.invocation_popup.winfo_exists()
-        ):
+            ):
             self.close_invocation_dropdown()
             return
+        
         active_features = sorted(self.configuration.active)
         popup = tk.Toplevel(self.root)
         self.invocation_popup = popup
         popup.withdraw()
         popup.overrideredirect(True)
         popup.transient(self.root)
-        frame = ttk.Frame(
-            popup,
-            padding=10,
-            relief="solid",
-            borderwidth=1
-        )
+        frame = ttk.Frame(popup, padding=10, relief="solid", borderwidth=1)
         frame.pack(fill=tk.BOTH, expand=True)
-        ttk.Label(
-            frame,
-            text="Choose active invocation features:"
-        ).pack(anchor="w", pady=(0, 8))
+        ttk.Label(frame,text="Choose active invocation features:"
+                  ).pack(anchor="w", pady=(0, 8))
+                  
         # Scrollable checkbox list.
         list_frame = ttk.Frame(frame)
         list_frame.pack(fill=tk.BOTH, expand=True)
@@ -476,34 +330,23 @@ class MARJADAGUI:
             width=280,
             height=min(260, max(60, len(active_features) * 28)),
             highlightthickness=0
-        )
-        scrollbar = ttk.Scrollbar(
-            list_frame,
-            orient=tk.VERTICAL,
-            command=canvas.yview
-        )
+            )
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=canvas.yview)
         canvas.configure(yscrollcommand=scrollbar.set)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         choices_frame = ttk.Frame(canvas)
-        window_id = canvas.create_window(
-            (0, 0),
-            window=choices_frame,
-            anchor="nw"
-        )
-        choices_frame.bind(
-            "<Configure>",
-            lambda event: canvas.configure(
-                scrollregion=canvas.bbox("all")
+        
+        window_id = canvas.create_window((0, 0), window=choices_frame, anchor="nw")
+        
+        choices_frame.bind("<Configure>", lambda event: canvas.configure(
+            scrollregion=canvas.bbox("all")
             )
         )
-        canvas.bind(
-            "<Configure>",
-            lambda event: canvas.itemconfigure(
-                window_id,
-                width=event.width
-            )
-        )
+        canvas.bind("<Configure>",
+                    lambda event: canvas.itemconfigure(window_id, width=event.width)
+                    )
+        
         # These are draft choices until Apply is pressed.
         variables = {}
         for feature in active_features:
@@ -732,6 +575,16 @@ class MARJADAGUI:
                 []
             )
         )
+    @staticmethod
+    def insert_colored_invocation_path(widget, path, active):
+        """Tag complete missing feature names, never matching substrings."""
+        widget.tag_configure("missing_feature", foreground="#d32f2f")
+        for index, feature in enumerate(path):
+            if index:
+                widget.insert(tk.END, " -> ")
+            tags = ("missing_feature",) if feature not in active else ()
+            widget.insert(tk.END, feature, tags)
+
     def choose_invocation_paths(self, target, path_iterator, active, structural, cross_tree, operation="ADD"):
         """Browse shortest-first paths, preview their union, confirm or return."""
         popup = tk.Toplevel(self.root)
@@ -763,12 +616,15 @@ class MARJADAGUI:
         path_text = tk.Text(popup, height=6, wrap=tk.WORD)
         path_text.pack(fill=tk.X, padx=15, pady=8)
 
+        ttk.Label(popup, text="Red feature names are missing from the current configuration.").pack(
+            anchor="w", padx=15)
+
         def display_path(event=None):
             index = combo.current()
             path_text.configure(state="normal")
             path_text.delete("1.0", tk.END)
             if 0 <= index < len(paths):
-                path_text.insert(tk.END, " -> ".join(paths[index]))
+                self.insert_colored_invocation_path(path_text, paths[index], active)
             path_text.configure(state="disabled")
 
         combo.bind("<<ComboboxSelected>>", display_path)
@@ -890,9 +746,13 @@ class MARJADAGUI:
             preview.geometry("950x600")
             text = tk.Text(preview, wrap=tk.WORD)
             text.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-            details = "SELECTED PATHS\n\n" + "\n\n".join(
-                f"Path {i+1}: " + " -> ".join(paths[i]) for i in chosen_indices
-            )
+            text.insert(tk.END, "SELECTED PATHS\n\n")
+            for position, index in enumerate(chosen_indices):
+                if position:
+                    text.insert(tk.END, "\n\n")
+                text.insert(tk.END, f"Path {index+1}: ")
+                self.insert_colored_invocation_path(text, paths[index], active)
+            details = ""
             missing = sorted(union - active)
             dependency_missing = sorted(required - active - union)
             details += f"\n\nMISSING ON-PATH FEATURES ({len(missing)})\n"
@@ -1126,7 +986,7 @@ class MARJADAGUI:
             tk.END,
             "\n\n".join(messages)
         )
-        if not success:
+        if not success and not any("ADAPTATION NOT APPLIED" in message for message in messages):
             self.result_text.insert(
                 tk.END,
                 "\n\nADAPTATION NOT APPLIED. "

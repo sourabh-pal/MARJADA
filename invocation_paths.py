@@ -1,9 +1,5 @@
-"""Lazy shortest-first enumeration of distinct, cycle-free invocation paths.
 
-Yen's algorithm enumerates progressively; the UI need not enumerate all paths
-or claim a total count before the user can choose. Equal-length paths use
-lexicographic order. Size means number of edges, not number of missing features.
-"""
+
 from collections import deque
 from heapq import heappop, heappush
 

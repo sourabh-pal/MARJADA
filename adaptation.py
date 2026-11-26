@@ -837,16 +837,14 @@ class AdaptationEngine:
 
 
 
-    # ============================================================
+
     # FIND ALL REACHABLE FEATURES
     # Find all reachable features in the active configuration
     #   from the invocation features
-    # ============================================================
+    # It check whether all the features in the active configuration is reachable from the invocation feature
+ 
 
-    def get_reachable_features(self,
-                               active,
-                               invocation_features
-                               ):
+    def get_reachable_features(self, active, invocation_features):
     
         active = set(active)
         invocation_features = set(invocation_features)
@@ -1059,7 +1057,7 @@ class AdaptationEngine:
     #     return dependent_to_remove
 
     
-    
+    # Verify realizability of the Bbarebone configuration or correct configuration.
     def verify_configuration(self):
         # Copies only: verification must not modify configuration.
         active = set(self.configuration.active)
@@ -1067,49 +1065,51 @@ class AdaptationEngine:
 
         messages = []
         results = {}
-
+        
+        # verify all conditions
         def check(category, condition, failure):
             results.setdefault(category, True)
 
             if not condition:
                 results[category] = False
                 messages.append(f"FAIL [{category}]: {failure}")
-
+                
+        # condition 1: check whether all active feature are in the feature model
         check(
             "Features",
             active.issubset(self.fm.features),
             f"Unknown active features: {sorted(active - self.fm.features)}"
-        )
-
+            )
+        
+        # condition 2: check whether root feature is in the active configuration
         check(
             "Root",
             self.root_feature in active,
             f"Root feature {self.root_feature} must be active."
-        )
+            )
 
-        # Structural constraints.
+        # condition 3: check whether is satisfied all the Structural constraints i.e., mandatory, optional, xor, or.
         for relation in ("mandatory", "optional", "xor", "or"):
             category = relation.upper()
             results[category] = True
 
-            for parent, children in self.fm.structural.get(
-                relation, {}
-            ).items():
+            for parent, children in self.fm.structural.get(relation, {}).items():
                 children = set(children)
                 selected = children & active
 
-                # For every structural relation:
-                # active child implies active parent.
+                # For every structural relation: active child implies active parent.
+                # This is true for all structural relations Mandatory, Optional, XOR, and OR
                 check(
                     category,
                     not selected or parent in active,
                     f"Active children {sorted(selected)} require "
                     f"their parent {parent} to be active."
-                )
+                    )
 
                 if parent not in active:
                     continue
-
+                
+                # For Mandatory relation: active parent implies active child. 
                 if relation == "mandatory":
                     missing = children - active
                     check(
@@ -1117,93 +1117,79 @@ class AdaptationEngine:
                         not missing,
                         f"{parent} is missing mandatory children: "
                         f"{sorted(missing)}"
-                    )
-
+                        )
+                    
+                # For XOR relation: active parent implies exactly one active child. 
                 elif relation == "xor":
                     check(
                         category,
                         len(selected) == 1,
                         f"{parent} needs exactly one child from "
                         f"{sorted(children)}; selected: {sorted(selected)}"
-                    )
+                        )
 
+                # For OR relation: active parent implies at least one active child. 
                 elif relation == "or":
                     check(
                         category,
                         bool(selected),
                         f"{parent} needs at least one child from "
                         f"{sorted(children)}."
-                    )
+                        )
 
-                # Optional children need no minimum selection.
+                
 
-        # Cross-tree constraints.
+        # condition 4: check whether is satisfies all the cross-tree constraints.
+        # check the requires constraints
         results["REQUIRES"] = True
-        for source, targets in self.fm.cross_tree.get(
-            "requires", {}
-        ).items():
+        for source, targets in self.fm.cross_tree.get("requires", {}).items():
             if source in active:
                 for target in targets:
-                    check(
-                        "REQUIRES",
-                        target in active,
-                        f"{source} requires {target}."
-                    )
-
+                    check("REQUIRES", target in active, f"{source} requires {target}.")
+                    
+        # check the excludes constraints
         results["EXCLUDES"] = True
-        for source, targets in self.fm.cross_tree.get(
-            "excludes", {}
-        ).items():
+        for source, targets in self.fm.cross_tree.get("excludes", {}).items():
             if source in active:
                 for target in targets:
-                    check(
-                        "EXCLUDES",
-                        target not in active,
-                        f"{source} and {target} cannot both be active."
-                    )
+                    check("EXCLUDES", target not in active, f"{source} and {target} cannot both be active.")
+
 
         # Invocation selection must exist and contain active features.
-        check(
-            "INVOCATION",
-            bool(invocation),
+        check("INVOCATION", bool(invocation),
             "Choose invocation features from the dropdown and click Apply."
-        )
+            )
 
-        check(
-            "INVOCATION",
-            invocation.issubset(active),
-            f"Invocation features are inactive: "
-            f"{sorted(invocation - active)}"
-        )
+        
+        check("INVOCATION", invocation.issubset(active),
+              f"Invocation features are inactive: "
+              f"{sorted(invocation - active)}"
+              )
 
         # Existing graph uses directed structural and requires edges.
         # Every active feature except the model root must be reachable.
         if active.issubset(self.fm.features):
-            reachable = self.get_reachable_features(
-                active,
-                invocation & active
-            )
+            reachable = self.get_reachable_features(active, invocation & active)
 
             unreachable = active - reachable - {self.root_feature}
 
-            check(
-                "INVOCATION",
-                not unreachable,
-                f"No active invocation path to: {sorted(unreachable)}"
-            )
+            check("INVOCATION",
+                  not unreachable,
+                  f"No active invocation path to: {sorted(unreachable)}"
+                  )
         else:
-            check(
-                "INVOCATION",
-                False,
-                "Cannot verify paths while unknown active features exist."
-            )
+            check("INVOCATION",
+                  False,
+                  "Cannot verify paths while unknown active features exist."
+                  )
 
         summary = [
             f"{'PASS' if passed else 'FAIL'}: {category}"
             for category, passed in results.items()
-        ]
+            ]
 
         valid = all(results.values())
+        
         return valid, summary + [""] + messages
     
     
