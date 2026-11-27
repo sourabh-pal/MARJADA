@@ -1,4 +1,5 @@
-"""GUI-compatible entry point for semantic ADD propagation."""
+#Created by Sourabh Pal
+
 from propagation import adapt
 
 

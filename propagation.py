@@ -1,8 +1,5 @@
-"""Monotone A/R propagation over an immutable original configuration.
+#Created by Sourabh Pal
 
-See SEMANTICS.md for the exact rule guards and UI request extension.
-No configuration mutation takes place until final validation succeeds.
-"""
 from collections import deque
 from types import SimpleNamespace
 from invocation_paths import iter_invocation_paths

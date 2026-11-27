@@ -1058,6 +1058,9 @@ class AdaptationEngine:
 
     
     # Verify realizability of the Bbarebone configuration or correct configuration.
+    
+    
+    
     def verify_configuration(self):
         # Copies only: verification must not modify configuration.
         active = set(self.configuration.active)

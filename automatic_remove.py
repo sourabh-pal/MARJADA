@@ -1,4 +1,5 @@
-"""GUI-compatible entry point for semantic REMOVE propagation."""
+#Created by Sourabh Pal
+
 from propagation import adapt
 
 
