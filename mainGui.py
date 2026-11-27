@@ -347,74 +347,85 @@ class MARJADAGUI:
                     lambda event: canvas.itemconfigure(window_id, width=event.width)
                     )
         
-        # These are draft choices until Apply is pressed.
+        # These are multiple choices until Apply is pressed.
         variables = {}
         for feature in active_features:
             variable = tk.BooleanVar(
                 master=popup,
-                value=feature in self.invocation_features
-            )
+                value=feature in self.invocation_features)
             variables[feature] = variable
             ttk.Checkbutton(
-                choices_frame,
-                text=feature,
-                variable=variable
-            ).pack(anchor="w", padx=4, pady=3)
+                choices_frame, text=feature, variable=variable
+                ).pack(anchor="w", padx=4, pady=3)
+        
+        
+        # Apply selection of the invocation features
         def apply_selection():
             selected = {
                 feature
                 for feature, variable in variables.items()
                 if variable.get()
             }
+            
             # Recheck against the current active configuration.
-            selected.intersection_update(
-                self.configuration.active
-            )
+            selected.intersection_update(self.configuration.active)
             if not selected:
                 messagebox.showwarning(
                     "Invocation Features",
                     "Choose at least one active feature.",
                     parent=popup
-                )
+                    )
                 return
+            
             self.invocation_features = set(selected)
             self.engine.invocation_features = set(selected)
             self.refresh_invocation_selection()
             self.close_invocation_dropdown()
+            
+            
         buttons = ttk.Frame(frame)
         buttons.pack(fill=tk.X, pady=(10, 0))
+        
         ttk.Button(
-            buttons,
-            text="Cancel",
-            command=self.close_invocation_dropdown
-        ).pack(side=tk.RIGHT)
+            buttons, text="Cancel", command=self.close_invocation_dropdown
+            ).pack(side=tk.RIGHT)
+            
         ttk.Button(
-            buttons,
-            text="Apply",
-            command=apply_selection
-        ).pack(side=tk.RIGHT, padx=(0, 8))
+            buttons, text="Apply", command=apply_selection
+            ).pack(side=tk.RIGHT, padx=(0, 8))
+            
         popup.bind(
             "<Escape>",
             lambda event: self.close_invocation_dropdown()
-        )
+            )
+        
         popup.update_idletasks()
+        
         x = self.invocation_button.winfo_rootx()
         y = (
             self.invocation_button.winfo_rooty()
             + self.invocation_button.winfo_height()
-        )
+            )
+        
+        
         # Keep the dropdown within the screen.
         x = max(
             0,
             min(x, popup.winfo_screenwidth() - popup.winfo_reqwidth())
-        )
+            )
+        
         y = max(
             0,
             min(y, popup.winfo_screenheight() - popup.winfo_reqheight())
-        )
+            )
+        
         popup.geometry(f"+{x}+{y}")
         popup.deiconify()
         popup.focus_set()
+    
+    
+    
+    
     # REFRESH EVERYTHING
     def refresh_all(self):
         self.close_invocation_dropdown()
@@ -426,40 +437,42 @@ class MARJADAGUI:
             self.refresh_invocation_selection()
             self.refresh_tree()
             return
+        
+        
         # Read the configuration updated by ADD/REMOVE.
         self.refresh_configuration()
+        
+        
         # REMOVE shows active features; ADD shows inactive features.
         self.refresh_feature_combo()
         self.refresh_invocation_selection()
+        
+        
         # Rebuild feature tree with current active/inactive states.
         self.refresh_tree()
         self.root.update_idletasks()
+        
+        
+        
+        
     # REFRESH CONFIGURATION
     def refresh_configuration(self):
+        
         # Active
-        self.active_list.delete(
-            0,
-            tk.END
-        )
-        for feature in sorted(
-            self.configuration.active
-        ):
-            self.active_list.insert(
-                tk.END,
-                feature
-            )
+        self.active_list.delete(0,tk.END)
+        
+        for feature in sorted(self.configuration.active):
+            self.active_list.insert(tk.END,feature)
+            
         # Inactive
-        self.inactive_list.delete(
-            0,
-            tk.END
-        )
-        for feature in sorted(
-            self.configuration.inactive
-        ):
-            self.inactive_list.insert(
-                tk.END,
-                feature
-            )
+        self.inactive_list.delete(0, tk.END)
+        
+        for feature in sorted(self.configuration.inactive):
+            self.inactive_list.insert(tk.END,feature)
+            
+            
+            
+            
     # REFRESH FEATURE COMBOBOX
     def refresh_feature_combo(self):
         if self.configuration is None:
@@ -474,77 +487,78 @@ class MARJADAGUI:
 
         self.feature_combo["values"] = values
         self.feature_combo.set("Select Feature")
+        
+        
+        
+        
 
     # REFRESH FEATURE TREE
     def refresh_tree(self):
+        
         for item in self.tree.get_children():
             self.tree.delete(item)
+            
         if self.fm is None or self.root_feature is None:
             return
-        self.insert_feature(
-            self.root_feature,
-            None,
-            "root"
-        )
+        
+        self.insert_feature(self.root_feature, None, "root")
+        
+        
+        
+        
     # INSERT FEATURE
     def insert_feature(self, feature, parent_id, relation ):
+        
         state = ("ACTIVE"
                  if feature in self.configuration.active
                  else "INACTIVE"
                  )
+        
         node = self.tree.insert(
             parent_id or "",
             tk.END,
             text=feature,
             values=(relation, state),
             open=True)
+        
         # Mandatory
         for child in self.fm_children("mandatory", feature):
             self.insert_relation(node, child, "mandatory")
+            
         # Optional
-        for child in self.fm_children(
-            "optional",
-            feature
-        ):
-            self.insert_relation(
-                node,
-                child,
-                "optional"
-            )
-        # ----------------------------------------------------
+        for child in self.fm_children("optional", feature):
+            self.insert_relation(node, child, "optional")
+            
+            
+            
         # XOR
-        # ----------------------------------------------------
-        for child in self.fm_children(
-            "xor",
-            feature
-        ):
-            self.insert_relation(
-                node,
-                child,
-                "XOR"
-            )
-        # ----------------------------------------------------
+        for child in self.fm_children("xor", feature):
+            self.insert_relation(node, child, "XOR")
+            
+            
         # OR
-        # ----------------------------------------------------
         for child in self.fm_children("or", feature):
             self.insert_relation(node, child, "OR")
+            
+            
+            
     # INSERT RELATION
     def insert_relation(self, parent_node, feature, relation):
         state = (
             "ACTIVE"
             if feature in self.configuration.active
             else "INACTIVE"
-        )
+            )
+        
         node = self.tree.insert(
             parent_node,
             tk.END,
             text=feature,
-            values=(
-                relation,
-                state
-            ),
+            values=(relation, state),
             open=True
-        )
+            )
+        
+        
         # Recursive children
         for (relation_key, relation_name) in [
             ("mandatory", "mandatory"),
@@ -552,29 +566,18 @@ class MARJADAGUI:
             ("xor", "XOR"),
             ("or", "OR")
             ]:
-            for child in self.fm_children(
-                relation_key,
-                feature
-                ):
-                self.insert_relation(
-                    node,
-                    child,
-                    relation_name
-                    )
+            
+            for child in self.fm_children(relation_key, feature):
+                self.insert_relation(node, child, relation_name)
+                
+                
+                
     # GET CHILDREN
-    def fm_children(
-        self,
-        relation_type,
-        feature
-    ):
-        return (
-            self.fm.structural[
-                relation_type
-            ].get(
-                feature,
-                []
-            )
-        )
+    def fm_children(self, relation_type, feature):
+        return (self.fm.structural[relation_type].get(feature, []))
+    
+    
+    
     @staticmethod
     def insert_colored_invocation_path(widget, path, active):
         """Tag complete missing feature names, never matching substrings."""
@@ -939,6 +942,11 @@ class MARJADAGUI:
         popup.grab_set()
         self.root.wait_window(popup)
         return result
+    
+    
+    
+    
+    
     # ========================================================
     # APPLY ADAPTATION
     # ========================================================
@@ -1011,157 +1019,122 @@ class MARJADAGUI:
             "Configuration reset to initial state.\n"
         )
         self.refresh_all()
-    # ========================================================
+        
+        
+        
+        
+
     # SHOW ACTIVE GRAPH
-    # ========================================================
     def show_graph(self):
+        
         if self.engine is None:
             messagebox.showwarning("No Feature Model", "Load a feature model first.")
             return
-        active = (
-            self.configuration.active
-        )
-        graph = (
-            self.engine.build_graph(
-                active
-            )
-        )
-        window = tk.Toplevel(
-            self.root
-        )
-        window.title(
-            "Active Feature Graph"
-        )
-        window.geometry(
-            "950x700"
-        )
-        text = tk.Text(
-            window,
-            wrap=tk.WORD,
-            font=(
-                "Courier New",
-                11
-            )
-        )
-        text.pack(
-            fill=tk.BOTH,
-            expand=True,
-            padx=10,
-            pady=10
-        )
-        text.insert(
-            tk.END,
-            "ACTIVE FEATURE GRAPH\n"
-        )
-        text.insert(
-            tk.END,
-            "====================\n\n"
-        )
-        for source in sorted(
-            graph
-        ):
+        
+        active = (self.configuration.active)
+        graph = (self.engine.build_graph(active))
+        window = tk.Toplevel(self.root)
+        window.title("Active Feature Graph")
+        window.geometry("950x700")
+        text = tk.Text(window, wrap=tk.WORD, font=("Courier New", 11))
+        text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        text.insert(tk.END, "ACTIVE FEATURE GRAPH\n")
+        text.insert(tk.END, "====================\n\n")
+        
+        for source in sorted(graph):
+            
             if not graph[source]:
                 continue
-            text.insert(
-                tk.END,
-                f"{source}\n"
-            )
-            for (
-                target,
-                relation
-            ) in graph[source]:
-                text.insert(
-                    tk.END,
-                    f"    --{relation}--> "
-                    f"{target}\n"
-                )
-            text.insert(
-                tk.END,
-                "\n"
-            )
-    # ========================================================
-    # SHOW INVOCATION PATH
-    # ========================================================
-    def show_invocation_path(self):
-        if self.engine is None:
-            messagebox.showwarning("No Feature Model", "Load a feature model first.")
-            return
-        active = (
-            self.configuration.active
-        )
-        #invocation_features = (
-        #    self.engine.find_invocation_features(
-        #        active
-        #    )
-        #)
-        window = tk.Toplevel(
-            self.root
-        )
-        window.title(
-            "Invocation Paths"
-        )
-        window.geometry(
-            "900x650"
-        )
-        text = tk.Text(
-            window,
-            wrap=tk.WORD,
-            font=(
-                "Courier New",
-                11
-            )
-        )
-        text.pack(
-            fill=tk.BOTH,
-            expand=True,
-            padx=10,
-            pady=10
-        )
-        text.insert(
-            tk.END,
-            "INVOCATION FEATURES\n"
-        )
-        text.insert(
-            tk.END,
-            "===================\n\n"
-        )
-        for feature in sorted(
-            self.invocation_features
-        ):
-            text.insert(
-                tk.END,
-                f"* {feature}\n"
-            )
-        text.insert(
-            tk.END,
-            "\n\nPATHS TO ACTIVE FEATURES\n"
-        )
-        text.insert(
-            tk.END,
-            "========================\n\n"
-        )
-        for feature in sorted(active):
-            # Invocation feature itself
-            # is not shown as py path to itself.
-            if feature in self.invocation_features:
-                continue
-            path = (self.engine.find_invocation_path(active, feature))
-            if path is None:
-                text.insert(
-                    tk.END,
-                    f"{feature}\n"
-                    f"    NO INVOCATION PATH\n\n"
-                )
-            else:
-                text.insert(
-                    tk.END,
-                    f"{feature}\n"
-                )
-                text.insert(
-                    tk.END,
-                    "    "
-                    + self.engine.format_path(
-                        path
-                    )
-                    + "\n\n"
-                )
+            
+            text.insert(tk.END, f"{source}\n")
+            
+            for (target, relation) in graph[source]:
+                text.insert(tk.END, f"    --{relation}--> " f"{target}\n")
+            text.insert(tk.END, "\n")
+            
+            
+   
+    # # SHOW INVOCATION PATH
+    # def show_invocation_path(self):
+    #     if self.engine is None:
+    #         messagebox.showwarning("No Feature Model", "Load a feature model first.")
+    #         return
+    #     active = (
+    #         self.configuration.active
+    #     )
+    #     #invocation_features = (
+    #     #    self.engine.find_invocation_features(
+    #     #        active
+    #     #    )
+    #     #)
+    #     window = tk.Toplevel(
+    #         self.root
+    #     )
+    #     window.title(
+    #         "Invocation Paths"
+    #     )
+    #     window.geometry(
+    #         "900x650"
+    #     )
+    #     text = tk.Text(
+    #         window,
+    #         wrap=tk.WORD,
+    #         font=(
+    #             "Courier New",
+    #             11
+    #         )
+    #     )
+    #     text.pack(
+    #         fill=tk.BOTH,
+    #         expand=True,
+    #         padx=10,
+    #         pady=10
+    #     )
+    #     text.insert(
+    #         tk.END,
+    #         "INVOCATION FEATURES\n"
+    #     )
+    #     text.insert(
+    #         tk.END,
+    #         "===================\n\n"
+    #     )
+    #     for feature in sorted(
+    #         self.invocation_features
+    #     ):
+    #         text.insert(
+    #             tk.END,
+    #             f"* {feature}\n"
+    #         )
+    #     text.insert(
+    #         tk.END,
+    #         "\n\nPATHS TO ACTIVE FEATURES\n"
+    #     )
+    #     text.insert(
+    #         tk.END,
+    #         "========================\n\n"
+    #     )
+    #     for feature in sorted(active):
+    #         # Invocation feature itself
+    #         # is not shown as py path to itself.
+    #         if feature in self.invocation_features:
+    #             continue
+    #         path = (self.engine.find_invocation_path(active, feature))
+    #         if path is None:
+    #             text.insert(
+    #                 tk.END,
+    #                 f"{feature}\n"
+    #                 f"    NO INVOCATION PATH\n\n"
+    #             )
+    #         else:
+    #             text.insert(
+    #                 tk.END,
+    #                 f"{feature}\n"
+    #             )
+    #             text.insert(
+    #                 tk.END,
+    #                 "    "
+    #                 + self.engine.format_path(
+    #                     path
+    #                 )
+    #                 + "\n\n"
+    #             )
